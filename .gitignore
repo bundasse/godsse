@@ -1,0 +1,42 @@
+# Node / 프론트엔드
+node_modules
+dist
+dist-ssr
+coverage
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# Java / 백엔드
+target/
+build/
+*.class
+*.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Env
+.env
+.env.*
+!.env.example
+*.local
+
+# Editor / OS
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.iml
+*.iws
+*.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

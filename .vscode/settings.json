@@ -1,0 +1,27 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "tsconfig.json": "tsconfig.*.json, env.d.ts",
+    "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
+    "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .prettier*, prettier*, .editorconfig",
+    "pom.xml": "mvnw, mvnw.cmd, .mvn, HELP.md"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[java]": {
+    "editor.defaultFormatter": "redhat.java",
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  "[xml]": {
+    "editor.formatOnSave": false,
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  "[markdown]": {
+    "editor.wordWrap": "on"
+  }
+}
