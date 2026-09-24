@@ -1,139 +1,45 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Route, Routes } from 'react-router'
 
-import { fetchHello, sendEcho } from '@/api/greeting'
+import AppLayout from '@/layouts/AppLayout.jsx'
+import HomePage from '@/pages/HomePage.jsx'
+import LoginPage from '@/pages/LoginPage.jsx'
+import MyPage from '@/pages/MyPage.jsx'
+import NotFoundPage from '@/pages/NotFoundPage.jsx'
+import ProfileEditPage from '@/pages/ProfileEditPage.jsx'
+import ProfilePage from '@/pages/ProfilePage.jsx'
+import ReceivedReviewListPage from '@/pages/ReceivedReviewListPage.jsx'
+import ReviewDetailPage from '@/pages/ReviewDetailPage.jsx'
+import ReviewNewPage from '@/pages/ReviewNewPage.jsx'
+import SearchPage from '@/pages/SearchPage.jsx'
+import SignupPage from '@/pages/SignupPage.jsx'
+import WrittenReviewListPage from '@/pages/WrittenReviewListPage.jsx'
 
 import './App.css'
 
-const DEFAULT_NAME = 'godsse'
-const DEFAULT_MESSAGE = 'React + Spring Boot 연동 확인'
-
+/**
+ * 전체 화면(라우트) 표.
+ *
+ * AppLayout 안쪽에 각 페이지가 렌더링된다(헤더/모바일 탭은 공통).
+ * React Router 의 <Route> 는 Vue Router 의 routes 배열과 같은 역할이다.
+ */
 function App() {
-  const [hello, setHello] = useState(null)
-  const [helloError, setHelloError] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  const [name, setName] = useState(DEFAULT_NAME)
-  const [message, setMessage] = useState(DEFAULT_MESSAGE)
-  const [echo, setEcho] = useState(null)
-  const [echoError, setEchoError] = useState(null)
-
-  // setState 는 effect 본문이 아니라 .then/.catch 콜백(비동기)에서만 호출한다.
-  const showHello = useCallback((data) => {
-    setHello(data)
-    setHelloError(null)
-    setLoading(false)
-  }, [])
-
-  const showHelloError = useCallback((message) => {
-    setHello(null)
-    setHelloError(message)
-    setLoading(false)
-  }, [])
-
-  // 최초 1회 조회 (StrictMode 의 effect 중복 실행에도 안전하도록 ignore 플래그 사용)
-  useEffect(() => {
-    let ignore = false
-
-    fetchHello()
-      .then((data) => {
-        if (!ignore) showHello(data)
-      })
-      .catch((error) => {
-        if (!ignore) showHelloError(error.message)
-      })
-
-    return () => {
-      ignore = true
-    }
-  }, [showHello, showHelloError])
-
-  const handleReload = () => {
-    setLoading(true)
-    setHelloError(null)
-    fetchHello()
-      .then(showHello)
-      .catch((error) => showHelloError(error.message))
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    setEcho(null)
-    setEchoError(null)
-    try {
-      setEcho(await sendEcho({ name, message }))
-    } catch (error) {
-      setEchoError(error.message)
-    }
-  }
-
   return (
-    <main className="app">
-      <h1 className="app__title">godsse</h1>
-      <p className="app__subtitle">React (Vite) + Java Spring Boot</p>
-
-      <section className="card">
-        <h2 className="card__title">GET /api/hello</h2>
-        {loading && <p className="text--muted">백엔드 응답을 기다리는 중...</p>}
-        {helloError && (
-          <p className="text--error">
-            {helloError}
-            <br />
-            <span className="text--muted">
-              backend 를 먼저 실행했는지 확인해 주세요. (mvnw spring-boot:run)
-            </span>
-          </p>
-        )}
-        {hello && (
-          <dl className="result">
-            <dt>message</dt>
-            <dd>{hello.message}</dd>
-            <dt>timestamp</dt>
-            <dd>{hello.timestamp}</dd>
-          </dl>
-        )}
-        <button type="button" className="button" onClick={handleReload}>
-          다시 요청
-        </button>
-      </section>
-
-      <section className="card">
-        <h2 className="card__title">POST /api/hello/echo</h2>
-        <form className="form" onSubmit={handleSubmit}>
-          <label className="form__label" htmlFor="name">
-            name
-          </label>
-          <input
-            id="name"
-            className="form__input"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <label className="form__label" htmlFor="message">
-            message
-          </label>
-          <input
-            id="message"
-            className="form__input"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-          />
-          <button type="submit" className="button">
-            전송
-          </button>
-        </form>
-        {echoError && <p className="text--error">{echoError}</p>}
-        {echo && (
-          <dl className="result">
-            <dt>name</dt>
-            <dd>{echo.name}</dd>
-            <dt>message</dt>
-            <dd>{echo.message}</dd>
-            <dt>length</dt>
-            <dd>{echo.length}</dd>
-          </dl>
-        )}
-      </section>
-    </main>
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="signup" element={<SignupPage />} />
+        <Route path="search" element={<SearchPage />} />
+        <Route path="u/:handle" element={<ProfilePage />} />
+        <Route path="u/:handle/received" element={<ReceivedReviewListPage />} />
+        <Route path="u/:handle/written" element={<WrittenReviewListPage />} />
+        <Route path="reviews/new" element={<ReviewNewPage />} />
+        <Route path="reviews/:id" element={<ReviewDetailPage />} />
+        <Route path="me" element={<MyPage />} />
+        <Route path="me/edit" element={<ProfileEditPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
   )
 }
 

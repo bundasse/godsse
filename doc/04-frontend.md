@@ -1,68 +1,90 @@
 # 04. 프론트엔드 (React + Vite)
 
-## 1. 파일 구조와 역할
-
 기준 경로: `frontend`
 
-| 경로                           | 역할                                                            |
-| ------------------------------ | --------------------------------------------------------------- |
-| `index.html`                   | `<div id="root">` 와 `/src/main.jsx` 로드                       |
-| `src/main.jsx`                 | `createRoot(...).render(<StrictMode><App/></StrictMode>)`       |
-| `src/App.jsx`                  | 예제 화면: 서버 메시지 조회 + echo 전송 폼                      |
-| `src/App.css`, `src/index.css` | 카드/결과표/폼 스타일, CSS 변수 기반 색상                       |
-| `src/api/client.js`            | 공통 fetch 래퍼(JSON 직렬화, 에러 변환, `get/post/put/delete`)  |
-| `src/api/greeting.js`          | `/api/hello` API 함수(`fetchHello`, `fetchHelloTo`, `sendEcho`) |
-| `vite.config.js`               | 플러그인, `@` 별칭, 포트(5173), `/api` 프록시                   |
-| `eslint.config.js`             | ESLint flat config                                              |
-| `.prettierrc.json`             | `semi: false`, `singleQuote: true`, `printWidth: 100`           |
-| `jsconfig.json`                | `@/*` → `./src/*` 경로 별칭(에디터 인식용)                      |
-| `.env.example`                 | `VITE_API_BASE_URL` 사용 예시                                   |
+## 1. 파일 구조와 역할
 
-## 2. 컴포넌트 구조와 상태
+| 경로 | 역할 |
+| --- | --- |
+| `index.html` | `<div id="root">` 와 `/src/main.jsx` 로드 |
+| `src/main.jsx` | `BrowserRouter` 안에 `<App />` 을 마운트 |
+| `src/App.jsx` | **라우트 표**. 어떤 URL 에 어떤 페이지를 보여 줄지 정의 |
+| `src/layouts/AppLayout.jsx` | 공통 뼈대(헤더 + 본문 + 모바일 하단 탭), `<Outlet />` 자리에 페이지가 들어감 |
+| `src/layouts/AppLayout.css` | 헤더/하단 탭/본문 폭, 반응형 규칙 |
+| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder 등) |
+| `src/pages/` | 화면 단위 컴포넌트 (라우트 1개 = 파일 1개) |
+| `src/api/client.js` | 공통 fetch 래퍼(JSON 직렬화, 에러 변환, `get/post/put/delete`) |
+| `src/api/greeting.js` | `/api/hello` 샘플 API 함수 (연결 확인용) |
+| `src/constants/` | 태그·룰·스포일러 마커처럼 화면과 서버가 공유하는 상수 |
+| `src/App.css` | 페이지/카드/폼/버튼 등 공용 클래스 |
+| `src/index.css` | CSS 변수(색상·치수)·기본 리셋·폰트 |
+| `vite.config.js` | 플러그인, `@` 별칭, 포트(5173), `/api` 프록시 |
+| `eslint.config.js` | ESLint flat config |
+| `.prettierrc.json` | `semi: false`, `singleQuote: true`, `printWidth: 100` |
+| `jsconfig.json` | `@/*` → `./src/*` 경로 별칭(에디터 인식용) |
+
+## 2. 라우팅
+
+`react-router` **7.18.4** 를 사용합니다. (Vue Router 의 `routes` 배열과 같은 개념)
+
+```jsx
+// src/App.jsx
+<Routes>
+  <Route element={<AppLayout />}>
+    <Route index element={<HomePage />} />                        {/* /            */}
+    <Route path="login" element={<LoginPage />} />                {/* /login       */}
+    <Route path="u/:handle" element={<ProfilePage />} />           {/* /u/godsse    */}
+    <Route path="reviews/:id" element={<ReviewDetailPage />} />    {/* /reviews/12  */}
+    <Route path="*" element={<NotFoundPage />} />                  {/* 그 외 전부    */}
+  </Route>
+</Routes>
+```
+
+| URL | 페이지 | 상태 |
+| --- | --- | --- |
+| `/` | `HomePage` | 뼈대 |
+| `/login`, `/signup` | `LoginPage`, `SignupPage` | 뼈대 (다음 단계에서 폼 연결) |
+| `/search` | `SearchPage` | 뼈대 |
+| `/u/:handle` | `ProfilePage` | 뼈대 |
+| `/u/:handle/received`, `/written` | 받은/쓴 감상 목록 | 뼈대 |
+| `/reviews/new`, `/reviews/:id` | 감상 작성 / 전문 | 뼈대 |
+| `/me`, `/me/edit` | 마이페이지 / 프로필 편집 | 뼈대 |
+
+- URL 파라미터는 `useParams()`(예: `:handle`), 쿼리 문자열은 `useSearchParams()`(예: `?to=godsse`)로 읽습니다.
+- `NavLink` 는 현재 경로와 같을 때 자동으로 활성 스타일 클래스를 붙여 줍니다.
+
+> ⚠️ `react-router` 8.x 는 Node 22.22 이상이 필요합니다. 현재 개발 PC 는 Node 22.19 이므로 **7.x 를 유지**합니다.
+
+## 3. 레이아웃과 반응형
 
 ```
-<App>
-├─ 상태
-│   ├─ hello, helloError, loading        # 조회 결과 / 에러 / 로딩
-│   └─ name, message, echo, echoError    # 폼 입력과 전송 결과
-├─ 효과
-│   └─ useEffect : 최초 1회 fetchHello() 호출 (ignore 플래그로 중복 반영 방지)
-└─ JSX
-    ├─ 섹션 1: GET /api/hello  → message / timestamp 표시 + "다시 요청" 버튼
-    └─ 섹션 2: POST /api/hello/echo → name/message 입력 폼 + 결과 표
+AppLayout
+├─ Header   (상단, 스크롤해도 따라옴)  — 로고 + PC 메뉴
+├─ <main>   (본문, 최대 폭 --content-width = 720px)
+└─ NavBar   (모바일 하단 탭)
 ```
 
-| 상태         | 초기값                            | 갱신 지점                                       |
-| ------------ | --------------------------------- | ----------------------------------------------- |
-| `hello`      | `null`                            | `showHello(data)` (조회 성공)                   |
-| `helloError` | `null`                            | `showHelloError(message)`                       |
-| `loading`    | `true`                            | `showHello` / `showHelloError` / `handleReload` |
-| `name`       | `'godsse'`                        | name 입력 `onChange`                            |
-| `message`    | `'React + Spring Boot 연동 확인'` | message 입력 `onChange`                         |
-| `echo`       | `null`                            | `handleSubmit` 성공 시                          |
-| `echoError`  | `null`                            | `handleSubmit` 실패 시                          |
+| 화면 폭 | 동작 |
+| --- | --- |
+| ~767px (모바일) | 헤더 메뉴 숨김, 하단 탭 표시, 본문 아래 여백 확보 |
+| 768px~ (PC) | 하단 탭 숨김, 헤더 메뉴 표시 |
 
-## 3. API 호출 계층
+치수는 `src/index.css` 의 CSS 변수(`--content-width`, `--header-height`, `--nav-height`)로 관리합니다.
+
+## 4. API 호출 계층
 
 ```js
-// App.jsx
+// 페이지 컴포넌트
 fetchHello().then((data) => {
   /* 화면 반영 */
 })
-sendEcho({ name, message }).catch((error) => {
-  /* 에러 표시 */
-})
 
-// src/api/greeting.js
+// src/api/greeting.js  — 도메인별 API 함수
 export const fetchHello = () => apiClient.get('/api/hello')
-export const sendEcho = ({ name, message }) => apiClient.post('/api/hello/echo', { name, message })
 
-// src/api/client.js
+// src/api/client.js    — 공통 fetch 래퍼
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
-fetch(`${BASE_URL}${path}`, {
-  headers: { 'Content-Type': 'application/json', ...headers },
-  ...rest,
-})
+fetch(`${BASE_URL}${path}`, { headers: { 'Content-Type': 'application/json', ...headers }, ...rest })
 ```
 
 - 응답 본문은 `response.text()` 로 읽은 뒤 JSON 파싱(빈 응답이면 `null`).
@@ -70,59 +92,72 @@ fetch(`${BASE_URL}${path}`, {
 - `BASE_URL` 이 비어 있으면 상대 경로(`/api/...`)로 호출되며, Vite 프록시를 타고 백엔드로 전달됩니다.
 - 백엔드를 직접 호출하려면 `frontend/.env.local` 에 `VITE_API_BASE_URL=http://localhost:8080` 지정(이 경우 백엔드 CORS 설정 필요).
 
-## 4. Vite 설정 (`vite.config.js`)
+## 5. Vite 설정 (`vite.config.js`)
 
-| 설정            | 값                               | 의미                                  |
-| --------------- | -------------------------------- | ------------------------------------- |
-| `plugins`       | `react()`                        | React Fast Refresh 지원               |
-| `resolve.alias` | `'@' → ./src`                    | `@/api/greeting` 처럼 절대경로 import |
-| `server.port`   | `5173`                           | 개발 서버 포트                        |
-| `server.proxy`  | `/api` → `http://localhost:8080` | 개발 중 CORS 없이 백엔드 호출         |
+| 설정 | 값 | 의미 |
+| --- | --- | --- |
+| `plugins` | `react()` | React Fast Refresh 지원 |
+| `resolve.alias` | `'@' → ./src` | `@/api/greeting` 처럼 절대경로 import |
+| `server.port` | `5173` | 개발 서버 포트 |
+| `server.proxy` | `/api` → `http://localhost:8080` | 개발 중 CORS 없이 백엔드 호출 |
 
-## 5. 린트/포맷 설정
+## 6. 린트/포맷 설정
 
 `eslint.config.js` (flat config):
 
-| 항목               | 내용                                                   |
-| ------------------ | ------------------------------------------------------ |
-| 대상 파일          | `**/*.{js,mjs,jsx}`                                    |
-| 제외               | `dist`, `dist-ssr`, `coverage`                         |
-| 언어 옵션          | `globals.browser`, `ecmaVersion: 'latest'`, JSX 활성화 |
-| 기본 규칙          | `js.configs.recommended`                               |
-| React Hooks        | `reactHooks.configs.flat.recommended`                  |
-| React Refresh      | `reactRefresh.configs.vite` (컴포넌트만 export 하도록) |
-| Prettier 충돌 방지 | `eslint-config-prettier/flat` (포맷팅 규칙 비활성화)   |
+| 항목 | 내용 |
+| --- | --- |
+| 대상 파일 | `**/*.{js,mjs,jsx}` |
+| 제외 | `dist`, `dist-ssr`, `coverage` |
+| 언어 옵션 | `globals.browser`, `ecmaVersion: 'latest'`, JSX 활성화 |
+| 기본 규칙 | `js.configs.recommended` |
+| React Hooks | `reactHooks.configs.flat.recommended` |
+| React Refresh | `reactRefresh.configs.vite` (컴포넌트만 export 하도록) |
+| Prettier 충돌 방지 | `eslint-config-prettier/flat` (포맷팅 규칙 비활성화) |
 
-> **알아둘 규칙**: `eslint-plugin-react-hooks` 7.x 의 `react-hooks/set-state-in-effect` 는 effect 본문에서 **동기적으로** `setState` 를 호출하면 오류를 냅니다.
-> 그래서 `App.jsx` 는 `fetchHello().then(...)` 처럼 **비동기 콜백 안에서** 상태를 갱신하고, 재조회는 이벤트 핸들러(`handleReload`)에서 처리합니다.
+> **알아둘 규칙 1**: `react-hooks/set-state-in-effect` 는 effect 본문에서 **동기적으로** `setState` 를 호출하면 오류를 냅니다.
+> 데이터 로딩은 `.then(callback)` 또는 이벤트 핸들러에서 처리합니다.
+>
+> **알아둘 규칙 2**: `react-refresh/only-export-components` 때문에 컴포넌트 파일에서는 컴포넌트만 export 합니다.
+> 상수는 `src/constants/*.js` 로 분리합니다.
 
 스크립트(`package.json`):
 
-| 명령              | 동작                     |
-| ----------------- | ------------------------ |
-| `npm run dev`     | 개발 서버(5173) + HMR    |
-| `npm run build`   | 프로덕션 빌드 → `dist/`  |
-| `npm run preview` | 빌드 결과 로컬 미리보기  |
-| `npm run lint`    | `eslint . --fix --cache` |
-| `npm run format`  | `prettier --write src/`  |
+| 명령 | 동작 |
+| --- | --- |
+| `npm run dev` | 개발 서버(5173) + HMR |
+| `npm run build` | 프로덕션 빌드 → `dist/` |
+| `npm run preview` | 빌드 결과 로컬 미리보기 |
+| `npm run lint` | `eslint . --fix --cache` |
+| `npm run format` | `prettier --write src/` |
 
-## 6. 새 화면/기능 추가 순서
+## 7. 상태 관리 방침
+
+| 범위 | 방법 |
+| --- | --- |
+| 화면 안의 상태 (입력값, 로딩, 오류) | `useState` |
+| 로그인한 사용자(여러 화면 공유) | `AuthContext` (기능 구현 단계에서 추가) |
+| 그 외 전역 상태 | 필요해지면 Zustand 등 검토 (지금은 도입하지 않음) |
+
+## 8. 새 화면/기능 추가 순서
 
 1. **API 함수 추가** — `src/api/<도메인>.js` 에 `apiClient` 를 사용해 함수 추가
-2. **컴포넌트 추가** — `src/components/` 생성 후 `App.jsx` 에 배치(라우팅이 필요하면 `react-router` 도입)
-3. **상태 관리** — 화면 단위는 `useState`, 공유 상태가 늘면 Context/Zustand 등 검토
-4. **데이터 로딩** — effect 에서 로딩 시 `set-state-in-effect` 규칙을 피하려면 `.then(callback)` 또는 이벤트 핸들러 사용
-5. **문서 갱신** — [05-api.md](./05-api.md), 필요 시 [02-architecture.md](./02-architecture.md)
+2. **페이지 추가** — `src/pages/<이름>Page.jsx` 작성 → `src/App.jsx` 라우트 표에 등록
+3. **공용 컴포넌트 분리** — 두 곳 이상에서 쓰면 `src/components/` 로 이동
+4. **데이터 로딩** — effect 안 동기 `setState` 를 피한다(`.then(callback)` / 이벤트 핸들러)
+5. **스타일** — 공용은 `src/App.css`, 레이아웃은 `layouts/AppLayout.css`, 화면 전용은 해당 페이지 옆 CSS
+6. **문서 갱신** — [05-api.md](./05-api.md), 필요 시 이 문서와 [02-architecture.md](./02-architecture.md)
 
-## 7. 스타일 규칙(요약)
+## 9. 스타일 규칙(요약)
 
 - 파일/변수: 컴포넌트 `PascalCase`, 함수·변수 `camelCase`, 상수 `UPPER_SNAKE_CASE`
-- 클래스명: `block__element`(`app__title`, `card__title`, `form__input`) + 변형(`text--error`, `text--muted`)
-- 색상/간격은 `src/index.css` 의 CSS 변수(`--color-*`, `--radius`) 사용
+- 클래스명: `block__element`(`page__title`, `card__title`, `form__input`) + 변형(`text--error`, `badge`)
+- 색상/간격은 `src/index.css` 의 CSS 변수(`--color-*`, `--radius`, `--content-width`) 사용
 - 문자열은 홑따옴표, 세미콜론 없음, 한 줄 100자(Prettier 설정과 동일)
 
 ## 관련 문서
 
 - 요청 흐름 → [02-architecture.md](./02-architecture.md)
 - API 명세 → [05-api.md](./05-api.md)
+- 백엔드 상세 → [03-backend.md](./03-backend.md)
 - 실행/트러블슈팅 → [06-development-guide.md](./06-development-guide.md)

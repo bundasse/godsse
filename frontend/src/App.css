@@ -1,26 +1,32 @@
-.app {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 48px 20px 64px;
+/* ---------------------------------------------------------------------------
+   페이지/카드/폼/버튼 등 여러 화면에서 함께 쓰는 공용 스타일.
+   클래스 이름 규칙: block__element (예: card__title), 변형은 block--variant.
+   색상/간격은 src/index.css 의 CSS 변수를 사용한다.
+   --------------------------------------------------------------------------- */
+
+.page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
-.app__title {
-  font-size: 32px;
+.page__title {
+  font-size: 24px;
 }
 
-.app__subtitle {
+.page__description {
   margin: 0;
   color: var(--color-muted);
+  font-size: 14px;
 }
+
+/* 카드 ---------------------------------------------------------------------- */
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
+  gap: 10px;
+  padding: 18px;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -28,8 +34,17 @@
 
 .card__title {
   font-size: 16px;
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
 }
+
+.card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+/* 폼 ------------------------------------------------------------------------ */
 
 .form {
   display: flex;
@@ -55,6 +70,8 @@
   outline-offset: 1px;
 }
 
+/* 버튼 ---------------------------------------------------------------------- */
+
 .button {
   align-self: flex-start;
   margin-top: 6px;
@@ -70,24 +87,26 @@
   filter: brightness(1.08);
 }
 
-.result {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 4px 12px;
-  margin: 0;
-  font-size: 14px;
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.result dt {
-  color: var(--color-muted);
+/* 배지/칩 ------------------------------------------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--color-primary-weak);
+  color: var(--color-primary);
+  font-size: 12px;
 }
 
-.result dd {
-  margin: 0;
-  word-break: break-all;
-}
+/* 텍스트 -------------------------------------------------------------------- */
 
 .text--muted {
+  margin: 0;
   color: var(--color-muted);
   font-size: 14px;
 }

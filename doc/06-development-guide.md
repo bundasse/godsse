@@ -77,6 +77,10 @@ cd backend
 | `POST /api/hello/echo` 정상 | 200 + `length` 동일 여부         |
 | `POST /api/hello/echo` 오류 | 400 + `errors[0].field = "name"` |
 | 프론트 화면                 | 메시지 표시, 폼 전송 결과 표시   |
+| `UserRepositoryTest`        | 저장·조회 및 생성/수정 시각 자동 기록 통과 |
+| H2 콘솔                     | `/h2-console` 접속 후 `USERS`·`REVIEWS` 등 테이블 생성 확인 |
+| 프론트 라우팅               | 360px / 768px / 1280px 에서 헤더 메뉴 ↔ 하단 탭 전환이 정상 |
+
 
 ## 4. 트러블슈팅
 
@@ -92,6 +96,17 @@ cd backend
 | ESLint `react-refresh/only-export-components`       | 컴포넌트 파일에서 컴포넌트 외 값 export     | 상수/유틸은 별도 파일로 분리                                               |
 | Maven 빌드 시 parent 를 찾지 못함(404)              | `4.1.1.RELEASE` 는 Maven Central 에 없음    | pom 의 부모 버전을 `4.1.1` 로 유지                                         |
 | `npm create vite` 가 "Ok to proceed? (y)" 에서 멈춤 | 비대화형 환경에서 패키지 설치 확인 프롬프트 | `--yes` 옵션을 주거나 파일을 직접 작성                                     |
+| `Table "USERS" not found`                              | 엔티티 스캔 실패 또는 DDL 미실행                          | `@Entity` 가 `com.godsse.backend.domain` 아래에 있는지, `spring.jpa.hibernate.ddl-auto=update` 인지 확인 |
+| H2 콘솔 접속 실패                                       | JDBC URL 불일치                                          | `/h2-console` 에서 JDBC URL 을 `application.properties` 의 `spring.datasource.url` 과 동일하게 입력 |
+| `LazyInitializationException`                           | 트랜잭션 밖에서 지연 로딩 객체를 읽음                     | 조회를 `@Transactional` 서비스 안에서 DTO 로 변환 ([study/01](./study/01-jpa-and-entity.md) 참고) |
+| `data/`·`uploads/` 가 git 에 올라감                     | 무시 목록 확인 부족                                      | `backend/.gitignore` 에 포함됨. 이미 추적 중이면 `git rm -r --cached data uploads` |
+| 컴파일 오류 `illegal unicode escape`                    | Java 주석/문자열의 `백슬래시 + u` 조합을 javac 이 유니코드 이스케이프로 해석함 | 경로 예시는 슬래시(`/`)로 적는다. 꼭 필요하면 `\\u` 처럼 백슬래시를 두 번 쓴다 |
+| H2 콘솔이 404 (`/h2-console` 접속 불가)                  | Spring Boot 4 부터 H2 콘솔이 **별도 모듈**로 분리됨        | `spring-boot-h2console` 의존성을 추가한다. 기동 로그에 `H2 console available at ...` 이 보이면 정상 |
+| 테스트에서 `Could not resolve placeholder 'app.cors.allowed-origins'` | `src/test/resources/application.properties` 가 같은 이름이라 기본 설정을 **통째로 대체**함 | 테스트 덮어쓰기는 `application-test.properties` + `@ActiveProfiles("test")` 로 한다 |
+| 설정을 고쳐도 이전 설정이 계속 적용됨                    | `target/test-classes` 에 이전 리소스가 남아 있음          | `.\mvnw.cmd clean test` 로 정리 후 실행                                    |
+
+
+
 
 ## 5. 코드 규칙
 
@@ -118,12 +133,25 @@ cd backend
 | 2026-09-23 | Java 기준을 **17** 로 설정 (`pom.xml` → `<java.version>17</java.version>`)                                       |
 | 2026-09-23 | pom 부모 버전을 `4.1.1.RELEASE` → `4.1.1` 로 수정(Maven Central 배포본에 맞춤)                                   |
 | 2026-09-23 | 린트 구성은 create-vite 최신 템플릿(oxlint) 대신 기존 프로젝트와 동일한 **ESLint + Prettier** 로 통일            |
+| 2026-09-24 | 도메인·리포지토리 계층 추가 — `domain`(User/Follow/Review/RuleSystem/SessionPlan + enum 3종), `repository` 5종 |
+| 2026-09-24 | 개발용 DB 도입 — Spring Data JPA + H2 파일 DB(`backend/data/godsse.mv.db`), 테스트는 메모리 DB로 분리 |
+| 2026-09-24 | 비밀번호 암호화용 `spring-security-crypto`(BCrypt) 추가 (Spring Security 필터 체인은 미도입) |
+| 2026-09-24 | 프로필 이미지 업로드 기반 — `app.upload.dir`, `/uploads/**` 정적 제공(`WebConfig`, `UploadConfig`) |
+| 2026-09-24 | 프론트 라우팅 도입 — `react-router@7.18.4`, `layouts/`·`pages/`·`components/`·`constants/` 구조, 반응형 레이아웃 |
+| 2026-09-24 | 문서 추가 — [07-domain-model.md](./07-domain-model.md), [study/01-jpa-and-entity.md](./study/01-jpa-and-entity.md) |
+
 
 ## 7. 남은 작업 (TODO)
 
 - [ ] JDK 17 설치 후 `.\mvnw.cmd test` 로 백엔드 컴파일/테스트 검증 (현재 미검증)
 - [ ] 필요 시 `git init` 후 첫 커밋 (`.gitignore`/`.gitattributes` 는 준비됨)
-- [ ] 기능 확장 시 `service` 레이어, 라우팅(`react-router`), DB(JPA) 도입 검토
+- [x] DB(JPA)·라우팅(react-router) 도입 — 2026-09-24 완료
+- [ ] `service` 계층 정리 — 다음 단계(1-1 인증)에서 함께 도입
+- [ ] 인증 인터셉터 + 로그인 사용자 주입(`@LoginUser`) 추가
+- [ ] 예외 응답 확장(401/403/404/409) + 공통 예외 클래스
+- [ ] 세션 로그인 보안 강화 — HttpOnly·SameSite 쿠키, 로그인 시 세션 ID 재발급
+- [ ] 배포 준비 — DB 이전(PostgreSQL 등), `ddl-auto=validate`, 백업, HTTPS
+
 
 ## 관련 문서
 

@@ -2,13 +2,29 @@
 
 React(Vite) 프론트엔드 + Java Spring Boot 백엔드로 구성된 풀스택 학습용 프로젝트입니다.
 
+## 프로젝트 작업 대원칙 (최우선 · 필독)
+
+> 상세: [doc/00-principles.md](./doc/00-principles.md)
+>
+> 1. **한국어 우선** — 보고·질문·설명은 한국어로. 한국어로 적확한 설명이 불가능할 때만 영어로.
+> 2. **계획 → 승인 → 실행** — 지시받으면 먼저 계획(변경 파일/내용, 검증 방법, 리스크)을 보고하고,
+>    **승인 후에만** 파일을 수정한다. (읽기·검색은 예외)
+> 3. **사용자 배경 고려** — 사용자는 Vue 프론트엔드 개발자이며 백엔드·Java·Spring·CS 는 초급.
+>    프론트엔드 개념에 비유해 설명하고, 용어는 `한국어(영어 원어)` + 한 줄 정의로 소개.
+> 4. **학습 자료화** — 백엔드·Java·Spring·CS 내용은 `doc/study/` 에 노트로 정리한 뒤 읽어보라고 요청.
+
+AI 도구 자동 로드 파일: [`.clinerules/00-principles.md`](./.clinerules/00-principles.md) · [`AGENTS.md`](./AGENTS.md)
+
 ## 구조
 
 ```
 godsse/
-├─ frontend/   # React 19 + Vite (JavaScript)
-├─ backend/    # Spring Boot 4.1.1 + Java 17 (Maven, Maven Wrapper 포함)
-└─ doc/        # 프로젝트 문서 (구조 / 흐름 / API / 개발 가이드)
+├─ frontend/      # React 19 + Vite (JavaScript)
+├─ backend/       # Spring Boot 4.1.1 + Java 17 (Maven, Maven Wrapper 포함)
+├─ doc/           # 프로젝트 문서 (대원칙 / 구조 / 흐름 / API / 개발 가이드)
+│  └─ study/      # 학습 노트 (백엔드 · Java · Spring · 컴퓨터공학)
+├─ .clinerules/   # AI 도구용 작업 규칙 (Cline 자동 로드)
+└─ AGENTS.md      # AI 도구 공통 작업 지침
 ```
 
 ## 문서
@@ -17,6 +33,7 @@ godsse/
 
 | 문서                                                         | 내용                                             |
 | ------------------------------------------------------------ | ------------------------------------------------ |
+| [doc/00-principles.md](./doc/00-principles.md)               | **작업 대원칙(최우선)** — 필독                   |
 | [doc/README.md](./doc/README.md)                             | 문서 인덱스 + 30초 요약                          |
 | [doc/01-overview.md](./doc/01-overview.md)                   | 프로젝트 개요, 기술 스택, 전체 디렉터리 구조     |
 | [doc/02-architecture.md](./doc/02-architecture.md)           | 전체 구성도, 요청 흐름(시퀀스), 프록시/CORS 동작 |
@@ -24,6 +41,9 @@ godsse/
 | [doc/04-frontend.md](./doc/04-frontend.md)                   | 컴포넌트 구조, 상태, API 계층, 린트/포맷 설정    |
 | [doc/05-api.md](./doc/05-api.md)                             | API 명세(요청/응답/에러)와 호출 예시             |
 | [doc/06-development-guide.md](./doc/06-development-guide.md) | 실행 순서, 검증, 트러블슈팅, 코드 규칙           |
+| [doc/07-domain-model.md](./doc/07-domain-model.md)           | 도메인 모델(ERD·테이블·스포일러 규칙)            |
+
+| [doc/study/README.md](./doc/study/README.md)                 | 학습 노트 인덱스 (백엔드·Java·Spring·CS)         |
 
 ## 사전 요구사항
 

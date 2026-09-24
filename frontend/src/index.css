@@ -5,8 +5,14 @@
   --color-text: #1f2430;
   --color-muted: #6b7280;
   --color-primary: #2563eb;
+  --color-primary-weak: #e8effd;
   --color-error: #dc2626;
   --radius: 10px;
+
+  /* 레이아웃 치수 — PC/모바일 반응형에서 함께 쓰는 값 */
+  --content-width: 720px;
+  --header-height: 56px;
+  --nav-height: 60px;
 
   color-scheme: light dark;
   font-family:
@@ -32,12 +38,24 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin: 0;
   line-height: 1.3;
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }

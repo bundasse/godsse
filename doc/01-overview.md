@@ -20,6 +20,8 @@
 | eslint-plugin-react-hooks   | 7.1.1                                   | React Hooks / React Compiler 규칙 |
 | eslint-plugin-react-refresh | 0.5.7                                   | 컴포넌트 export 규칙              |
 | Prettier                    | 3.9.9 (+ eslint-config-prettier 10.1.8) | 포맷터와 린트 충돌 방지           |
+| react-router                 | 7.18.4                                  | 화면 라우팅 (`/u/:handle`, `/reviews/:id`) |
+
 
 ### 백엔드
 
@@ -32,6 +34,10 @@
 | Actuator        | starter-actuator                     | `/actuator/health`                            |
 | DevTools        | spring-boot-devtools                 | 코드 변경 시 자동 재시작 (개발용)             |
 | Maven           | 3.9.16 (Wrapper 3.3.4 자동 다운로드) | Maven 설치 불필요                             |
+| Spring Data JPA | Boot 4.1.1 관리                        | `spring-boot-starter-data-jpa` (엔티티 ↔ 테이블) |
+| H2              | Boot 4.1.1 관리                        | 개발용 파일 DB(설치 불필요), 테스트는 메모리 DB |
+| spring-security-crypto | 7.x                            | BCrypt 비밀번호 해시만 사용(필터 체인 미도입)   |
+
 
 ## 3. 전체 디렉터리 구조
 
@@ -78,6 +84,11 @@ godsse/
          └─ greeting.js          # /api/hello 관련 API 함수
 ```
 
+> **2026-09-24 추가**: 프론트엔드는 `src/layouts/`(공통 레이아웃)·`src/pages/`(화면)·`src/components/`·
+> `src/constants/` 로 확장되었고, 백엔드는 `domain/`(엔티티)·`repository/`(DB 접근) 가 추가되었습니다.
+> 최신 구조는 [04-frontend.md](./04-frontend.md) · [03-backend.md](./03-backend.md) 를 참고하세요.
+
+
 ## 4. 포트와 주소
 
 | 대상                   | 주소                                  | 설명                                      |
@@ -97,6 +108,9 @@ godsse/
 | 프론트엔드 `npm run build` | ✅ 성공 (`19 modules transformed`)                      |
 | 프론트엔드 개발 서버       | ✅ `http://localhost:5173` HTTP 200 응답 확인           |
 | 백엔드 컴파일/테스트       | ⚠️ **미검증** — 개발 PC 에 JDK 가 없어 `mvnw` 실행 불가 |
+| 프론트 `npm run build`(2026-09-24 재확인) | ✅ 성공 (40 modules, 라우팅 추가 후)                  |
+| 백엔드 도메인/리포지토리 골격             | ⚠️ **미검증** — 개발 PC 에 JDK 가 없어 컴파일 불가    |
+
 
 > 백엔드는 JDK 17 설치 후 `.\mvnw.cmd test` 로 검증하세요. 절차는 [06-development-guide.md](./06-development-guide.md) 참고.
 
