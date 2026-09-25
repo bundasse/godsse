@@ -21,6 +21,8 @@
 | 노트                                           | 주제                       | 관련 코드                                          |
 | ---------------------------------------------- | -------------------------- | -------------------------------------------------- |
 | [01-jpa-and-entity.md](./01-jpa-and-entity.md) | JPA 와 엔티티 · 리포지토리 | `domain/`, `repository/`, `application.properties` |
+| [02-spring-layers.md](./02-spring-layers.md)   | 계층 구조와 트랜잭션       | `api/`, `service/`, `ApiExceptionHandler`          |
+| [03-session-login.md](./03-session-login.md)   | 세션 로그인(쿠키·BCrypt)   | `AuthController`, `common/`, `AuthProvider`        |
 
 > 첫 노트는 JDK 17 설치 후 `.\mvnw.cmd test` 를 실행하는 시점에 만들어질 예정입니다. (아래 예정 주제 참고)
 

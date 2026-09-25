@@ -11,10 +11,13 @@
 | `src/App.jsx` | **라우트 표**. 어떤 URL 에 어떤 페이지를 보여 줄지 정의 |
 | `src/layouts/AppLayout.jsx` | 공통 뼈대(헤더 + 본문 + 모바일 하단 탭), `<Outlet />` 자리에 페이지가 들어감 |
 | `src/layouts/AppLayout.css` | 헤더/하단 탭/본문 폭, 반응형 규칙 |
-| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder 등) |
+| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute) |
+| `src/context/auth.js` | 로그인 상태 컨텍스트 정의 + `useAuth()` 훅 |
+| `src/context/AuthProvider.jsx` | 로그인 상태를 앱에 공급(시작 시 `/api/auth/me` 로 복원) |
 | `src/pages/` | 화면 단위 컴포넌트 (라우트 1개 = 파일 1개) |
 | `src/api/client.js` | 공통 fetch 래퍼(JSON 직렬화, 에러 변환, `get/post/put/delete`) |
 | `src/api/greeting.js` | `/api/hello` 샘플 API 함수 (연결 확인용) |
+| `src/api/auth.js` | 회원가입·로그인·로그아웃·내 정보 API 함수 |
 | `src/constants/` | 태그·룰·스포일러 마커처럼 화면과 서버가 공유하는 상수 |
 | `src/App.css` | 페이지/카드/폼/버튼 등 공용 클래스 |
 | `src/index.css` | CSS 변수(색상·치수)·기본 리셋·폰트 |
@@ -136,8 +139,42 @@ fetch(`${BASE_URL}${path}`, { headers: { 'Content-Type': 'application/json', ...
 | 범위 | 방법 |
 | --- | --- |
 | 화면 안의 상태 (입력값, 로딩, 오류) | `useState` |
-| 로그인한 사용자(여러 화면 공유) | `AuthContext` (기능 구현 단계에서 추가) |
+| 로그인한 사용자(여러 화면 공유) | `AuthContext` — `src/context/auth.js` + `AuthProvider.jsx` |
 | 그 외 전역 상태 | 필요해지면 Zustand 등 검토 (지금은 도입하지 않음) |
+
+### 로그인 상태 흐름
+
+| 파일 | 역할 |
+| --- | --- |
+| `src/context/auth.js` | `AuthContext` 와 `useAuth()` 훅 |
+| `src/context/AuthProvider.jsx` | `user`, `loading`, `login`, `signup`, `logout` 을 공급 |
+| `src/components/ProtectedRoute.jsx` | 로그인 필요한 화면을 감싼다(비로그인 → `/login`) |
+| `src/api/auth.js` | `/api/auth/*` 호출 함수 |
+| `src/api/client.js` | `credentials: 'include'`(쿠키 전송), `ApiError`(status·errors 포함) |
+
+1. 앱이 시작되면 `AuthProvider` 가 `GET /api/auth/me` 로 **로그인 상태를 복원**한다.
+   (세션 쿠키가 남아 있으면 200, 없으면 401 → 비로그인 상태로 처리)
+2. 로그인/회원가입에 성공하면 `user` 가 채워지고 헤더·하단 탭이 즉시 바뀐다.
+3. 로그아웃은 `POST /api/auth/logout` 후 `user` 를 비운다.
+4. `/me`, `/me/edit`, `/reviews/new` 는 `ProtectedRoute` 로 감싸여 있고,
+   비로그인 상태에서 접근하면 `/login` 으로 보낸 뒤 로그인 후 원래 주소로 돌아온다.
+
+> **파일을 나눈 이유**: ESLint 의 `react-refresh/only-export-components` 규칙이
+> "컴포넌트 파일에서는 컴포넌트만 export" 하도록 요구합니다. 그래서 컨텍스트 객체와 훅은
+> `auth.js`(컴포넌트 없음)에, 컴포넌트는 `AuthProvider.jsx` 에 둡니다.
+
+폼 오류는 `ApiError` 로 받아 전체 메시지와 입력칸별 메시지를 함께 표시한다.
+
+```js
+try {
+  await signup(form)
+} catch (apiError) {
+  setError(apiError.message) // 전체 메시지
+  setFieldErrors(
+    Object.fromEntries((apiError.errors ?? []).map((item) => [item.field, item.reason])),
+  )
+}
+```
 
 ## 8. 새 화면/기능 추가 순서
 

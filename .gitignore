@@ -30,6 +30,8 @@ build/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 *.iml
 *.iws
 *.ipr

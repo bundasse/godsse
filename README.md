@@ -89,6 +89,16 @@ npm run dev
 
 개발 모드에서는 `frontend/vite.config.js` 의 프록시 설정으로 `/api` 요청이 `http://localhost:8080` 으로 전달되므로 CORS 없이 연동됩니다.
 
+### VS Code 로 실행 (권장)
+
+`.vscode/launch.json` 과 `.vscode/tasks.json` 이 준비되어 있습니다.
+
+| 하고 싶은 일 | 방법 |
+| --- | --- |
+| 백엔드 · 프론트엔드 각각 실행 | 실행 및 디버그(F5) → `백엔드: 실행 (Spring Boot)` / `프론트엔드: 실행 (Vite dev)` |
+| 둘 다 한 번에 | 실행 및 디버그 → `풀스택: 백엔드 + 프론트엔드` |
+| 빌드 · 테스트 | 터미널 → 태스크 실행 → `backend: 빌드 (jar)` / `backend: 테스트` / `frontend: 빌드` / `검증: 프론트엔드 (포맷 → 린트 → 빌드)` |
+
 ## 샘플 API
 
 | 메서드 | 경로                | 설명                                  |
@@ -97,6 +107,10 @@ npm run dev
 | GET    | `/api/hello/{name}` | 이름이 포함된 인사 메시지 반환        |
 | POST   | `/api/hello/echo`   | `name`, `message` 검증 후 메시지 반환 |
 | GET    | `/actuator/health`  | 헬스체크                              |
+| POST   | `/api/auth/signup`  | 회원가입(핸들·이메일·비밀번호·닉네임) |
+| POST   | `/api/auth/login`   | 로그인(핸들·비밀번호)                 |
+| POST   | `/api/auth/logout`  | 로그아웃 (204, 본문 없음)             |
+| GET    | `/api/auth/me`      | 로그인한 사용자 정보 (미로그인 시 401) |
 
 `POST /api/hello/echo` 요청 예시:
 

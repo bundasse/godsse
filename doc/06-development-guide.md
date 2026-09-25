@@ -46,6 +46,25 @@ npm run dev
 - 브라우저에서 <http://localhost:5173> 접속 → 서버 메시지와 폼이 보이면 연동 성공입니다.
 - 백엔드를 끄면 화면에 "백엔드에 연결하지 못했습니다" 오류가 표시됩니다(정상 동작).
 
+### 2.3 VS Code 에서 실행 (권장)
+
+`.vscode/launch.json`(실행·디버그)과 `.vscode/tasks.json`(반복 작업)이 준비되어 있습니다.
+
+| 하고 싶은 일 | 방법 |
+| --- | --- |
+| 백엔드 실행(디버그) | 실행 및 디버그(F5) → **백엔드: 실행 (Spring Boot)** |
+| 프론트엔드 실행 | 실행 및 디버그 → **프론트엔드: 실행 (Vite dev)** |
+| 둘 다 한 번에 | 실행 및 디버그 → **풀스택: 백엔드 + 프론트엔드** |
+| 빌드 결과 미리보기 | 실행 및 디버그 → **프론트엔드: 미리보기 (빌드 결과)** |
+| 백엔드 빌드(jar) | 터미널 → 태스크 실행 → **backend: 빌드 (jar)** (Ctrl+Shift+B 기본 빌드) |
+| 백엔드 테스트 | 태스크 실행 → **backend: 테스트** |
+| 프론트 검증 묶음 | 태스크 실행 → **검증: 프론트엔드 (포맷 → 린트 → 빌드)** |
+
+- 백엔드 실행 구성은 작업 폴더를 `backend` 로 잡아 둡니다(DB 파일이 `backend/data` 에 생기도록).
+- 프론트엔드 실행 구성은 Windows 기준 `npm.cmd` 를 씁니다. (macOS/Linux 에서는 `npm`)
+- 기동이 끝나면 브라우저가 자동으로 열립니다(`serverReadyAction`).
+
+
 ## 3. 검증 체크리스트
 
 아래 명령은 프로젝트 루트(`godsse`)에서 실행합니다.
@@ -104,6 +123,8 @@ cd backend
 | H2 콘솔이 404 (`/h2-console` 접속 불가)                  | Spring Boot 4 부터 H2 콘솔이 **별도 모듈**로 분리됨        | `spring-boot-h2console` 의존성을 추가한다. 기동 로그에 `H2 console available at ...` 이 보이면 정상 |
 | 테스트에서 `Could not resolve placeholder 'app.cors.allowed-origins'` | `src/test/resources/application.properties` 가 같은 이름이라 기본 설정을 **통째로 대체**함 | 테스트 덮어쓰기는 `application-test.properties` + `@ActiveProfiles("test")` 로 한다 |
 | 설정을 고쳐도 이전 설정이 계속 적용됨                    | `target/test-classes` 에 이전 리소스가 남아 있음          | `.\mvnw.cmd clean test` 로 정리 후 실행                                    |
+| PowerShell 에서 `curl.exe -d '{...}'` 본문이 깨져 400 (JSON parse error) | PowerShell 이 따옴표를 벗겨 전달함 | 본문을 UTF-8 파일로 저장하고 `--data-binary "@파일"` 로 보낸다 ([05-api.md](./05-api.md) 2.5 참고) |
+
 
 
 
@@ -116,6 +137,8 @@ cd backend
 | 포맷        | Prettier — 세미콜론 없음, 홑따옴표, 100자 (`frontend/.prettierrc.json`)  |
 | Java 스타일 | 생성자 주입, `record` DTO, 필드 주입 금지, 패키지 `com.godsse.backend.*` |
 | 패키지 분리 | 컨트롤러 `api`, 설정 `config`, 요청/응답 `api/dto`                       |
+| 백엔드 계층 | 컨트롤러 `api`, 로직 `service`, DB 접근 `repository`, 엔티티 `domain`, 공통·예외 `common` |
+
 | 프론트 분리 | HTTP 공통 처리 `src/api/client.js`, 도메인별 API `src/api/*.js`          |
 | 문서        | API 변경 시 `doc/05-api.md`, 구조 변경 시 `doc/01·02` 함께 갱신          |
 
@@ -139,6 +162,12 @@ cd backend
 | 2026-09-24 | 프로필 이미지 업로드 기반 — `app.upload.dir`, `/uploads/**` 정적 제공(`WebConfig`, `UploadConfig`) |
 | 2026-09-24 | 프론트 라우팅 도입 — `react-router@7.18.4`, `layouts/`·`pages/`·`components/`·`constants/` 구조, 반응형 레이아웃 |
 | 2026-09-24 | 문서 추가 — [07-domain-model.md](./07-domain-model.md), [study/01-jpa-and-entity.md](./study/01-jpa-and-entity.md) |
+| 2026-09-25 | 회원가입·로그인·로그아웃·내 정보 API 구현 — `AuthService`, `AuthController`, 세션(HttpSession) + BCrypt, `@LoginUser` ArgumentResolver |
+| 2026-09-25 | 오류 처리 확장 — `BusinessException`(404/409/401) 표준 응답, 잘못된 JSON 400 처리, 스택 트레이스 노출 차단(`server.error.*`) |
+| 2026-09-25 | 프론트 인증 — `context/AuthProvider` + `useAuth`, `ProtectedRoute`, 로그인·회원가입 폼, `ApiError`(status/errors) |
+| 2026-09-25 | VS Code 실행 구성 — `.vscode/launch.json`(백엔드/프론트엔드/풀스택), `.vscode/tasks.json`(실행·테스트·빌드·검증) |
+| 2026-09-25 | 검증: 백엔드 테스트 **15건 통과**, 프론트 빌드 성공, 실서버 E2E(가입 201 → me 200 → 로그아웃 204 → me 401 → 로그인 200 → 중복 409) 확인 |
+
 
 
 ## 7. 남은 작업 (TODO)

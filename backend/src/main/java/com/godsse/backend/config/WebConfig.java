@@ -1,13 +1,18 @@
 package com.godsse.backend.config;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import com.godsse.backend.common.LoginUserArgumentResolver;
+
 /**
- * 업로드한 프로필 이미지를 {@code /uploads/**} URL 로 제공한다.
+ * 업로드한 프로필 이미지를 {@code /uploads/**} URL 로 제공하고,
+ * 로그인 사용자 주입기({@link LoginUserArgumentResolver})를 등록한다.
  *
  * <p>
  * 예: {@code backend/uploads/profiles/a1b2.png} 파일이
@@ -18,9 +23,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
 	private final Path uploadDirectory;
+	private final LoginUserArgumentResolver loginUserArgumentResolver;
 
-	public WebConfig(Path uploadDirectory) {
+	public WebConfig(Path uploadDirectory, LoginUserArgumentResolver loginUserArgumentResolver) {
 		this.uploadDirectory = uploadDirectory;
+		this.loginUserArgumentResolver = loginUserArgumentResolver;
 	}
 
 	@Override
@@ -32,6 +39,18 @@ public class WebConfig implements WebMvcConfigurer {
 		}
 
 		registry.addResourceHandler("/uploads/**").addResourceLocations(location);
+	}
+
+	/**
+	 * {@code @LoginUser} 가 붙은 파라미터를 처리할 변환기를 등록한다.
+	 *
+	 * <p>
+	 * 등록하지 않으면 Spring 은 {@code @LoginUser User user} 를 일반 파라미터로 보려 하기 때문에
+	 * 반드시 여기서 추가해 주어야 한다.
+	 */
+	@Override
+	public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+		resolvers.add(this.loginUserArgumentResolver);
 	}
 
 }

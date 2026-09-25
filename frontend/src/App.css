@@ -116,3 +116,50 @@
   color: var(--color-error);
   font-size: 14px;
 }
+
+/* 폼 입력 한 줄 --------------------------------------------------------------- */
+
+.form__row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.form__hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.form__error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: 13px;
+}
+
+/* 이름-값 목록 (프로필 정보 등) ---------------------------------------------- */
+
+.definition {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.definition dt {
+  color: var(--color-muted);
+}
+
+.definition dd {
+  margin: 0;
+}
+
+/* 보조 버튼(테두리만) -------------------------------------------------------- */
+
+.button--muted {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}

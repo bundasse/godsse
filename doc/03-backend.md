@@ -9,14 +9,26 @@ com.godsse.backend
 ├─ GodsseBackendApplication.java   # 진입점 (@SpringBootApplication)
 ├─ api/                            # REST 엔드포인트 계층 (Controller)
 │  ├─ HelloController.java         # 샘플 API 3개 (연결 확인용)
+│  ├─ AuthController.java          # 회원가입·로그인·로그아웃·내 정보
 │  ├─ ApiExceptionHandler.java     # @RestControllerAdvice (예외 → JSON)
 │  └─ dto/                         # 요청/응답 스키마 (record)
 │     ├─ HelloResponse.java
 │     ├─ EchoRequest.java
 │     ├─ EchoResponse.java
 │     ├─ FieldValidationError.java
-│     └─ ValidationErrorResponse.java
-├─ service/                        # 비즈니스 로직 (기능 구현 단계에서 추가)
+│     ├─ ValidationErrorResponse.java
+│     ├─ SignupRequest.java
+│     ├─ LoginRequest.java
+│     ├─ UserProfileResponse.java
+│     └─ UserSummary.java
+├─ service/                        # 비즈니스 로직 + 트랜잭션 경계
+│  ├─ AuthService.java             # 회원가입·로그인 (중복 확인, BCrypt)
+│  └─ UserService.java             # 사용자 조회
+├─ common/                         # 공통 상수·인증 보조
+│  ├─ SessionKeys.java             # 세션 키 상수
+│  ├─ LoginUser.java               # @LoginUser 애노테이션
+│  ├─ LoginUserArgumentResolver.java  # 세션 → 로그인 사용자 주입
+│  └─ exception/                   # BusinessException, NotFound/Conflict/Unauthorized
 ├─ domain/                         # 엔티티 = DB 테이블
 │  ├─ BaseTimeEntity.java          # 생성/수정 시각 공통 상위 클래스
 │  ├─ User.java                    # users
@@ -44,6 +56,23 @@ com.godsse.backend
 - **계층 규칙**: 요청을 받는 `api` → 로직을 담는 `service` → DB 를 다루는 `repository` → 테이블과 대응하는 `domain`.
   기능이 커지면 컨트롤러에 로직을 넣지 않고 `service` 로 분리합니다.
 - 테스트는 `backend/src/test/java/com/godsse/backend` 아래에 같은 패키지 규칙으로 둡니다.
+
+### 상태 코드 규약
+
+| 상황 | 코드 | 응답 |
+| --- | --- | --- |
+| 정상 조회/처리 | 200 | 각 DTO |
+| 생성 성공(회원가입) | 201 | `UserProfileResponse` |
+| 본문 없음(로그아웃) | 204 | (없음) |
+| 입력 규칙 위반(`@Valid`)·JSON 파싱 실패 | 400 | `{ message, errors[] }` |
+| 로그인 필요·인증 실패 | 401 | `{ message, errors[] }` |
+| 없는 대상 | 404 | `{ message, errors[] }` |
+| 중복(핸들·이메일 등) | 409 | `{ message, errors[] }` |
+
+서비스는 예외(`BusinessException` 하위)를 던지기만 하고, 상태 코드 결정은 예외 클래스와
+`ApiExceptionHandler` 가 담당합니다. 인증이 필요한 API 는 파라미터에 `@LoginUser` 를 붙이면
+미로그인 시 자동으로 401 이 됩니다.
+
 
 ## 2. 클래스별 역할
 
