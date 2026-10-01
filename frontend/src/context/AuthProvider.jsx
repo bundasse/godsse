@@ -42,6 +42,14 @@ export function AuthProvider({ children }) {
     }
   }, [showUser])
 
+  /**
+   * 프로필 편집 결과를 전역 로그인 상태에 반영한다.
+   * (헤더의 닉네임과 프로필 이미지가 저장 직후 바뀌도록)
+   */
+  const applyProfile = useCallback((profile) => {
+    setUser(profile)
+  }, [])
+
   const signup = useCallback(async (form) => {
     const profile = await signupApi(form)
     setUser(profile)
@@ -64,8 +72,8 @@ export function AuthProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, loading, signup, login, logout }),
-    [user, loading, signup, login, logout],
+    () => ({ user, loading, signup, login, logout, applyProfile }),
+    [user, loading, signup, login, logout, applyProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

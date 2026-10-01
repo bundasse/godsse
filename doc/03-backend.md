@@ -10,6 +10,7 @@ com.godsse.backend
 ├─ api/                            # REST 엔드포인트 계층 (Controller)
 │  ├─ HelloController.java         # 샘플 API 3개 (연결 확인용)
 │  ├─ AuthController.java          # 회원가입·로그인·로그아웃·내 정보
+│  ├─ UserController.java          # 프로필 조회·검색·편집·이미지 업로드
 │  ├─ ApiExceptionHandler.java     # @RestControllerAdvice (예외 → JSON)
 │  └─ dto/                         # 요청/응답 스키마 (record)
 │     ├─ HelloResponse.java
@@ -20,15 +21,19 @@ com.godsse.backend
 │     ├─ SignupRequest.java
 │     ├─ LoginRequest.java
 │     ├─ UserProfileResponse.java
-│     └─ UserSummary.java
+│     ├─ UserSummary.java
+│     ├─ UpdateProfileRequest.java
+│     ├─ UserProfileDetailResponse.java
+│     └─ PageResponse.java
 ├─ service/                        # 비즈니스 로직 + 트랜잭션 경계
 │  ├─ AuthService.java             # 회원가입·로그인 (중복 확인, BCrypt)
-│  └─ UserService.java             # 사용자 조회
+│  ├─ UserService.java             # 사용자 조회·검색·프로필 편집
+│  └─ FileStorageService.java      # 업로드 파일 저장·검증·삭제 (UUID 이름)
 ├─ common/                         # 공통 상수·인증 보조
 │  ├─ SessionKeys.java             # 세션 키 상수
 │  ├─ LoginUser.java               # @LoginUser 애노테이션
 │  ├─ LoginUserArgumentResolver.java  # 세션 → 로그인 사용자 주입
-│  └─ exception/                   # BusinessException, NotFound/Conflict/Unauthorized
+│  └─ exception/                   # BusinessException, NotFound/Conflict/Unauthorized/BadRequest
 ├─ domain/                         # 엔티티 = DB 테이블
 │  ├─ BaseTimeEntity.java          # 생성/수정 시각 공통 상위 클래스
 │  ├─ User.java                    # users
@@ -87,6 +92,10 @@ com.godsse.backend
 | `PasswordConfig` | `BCryptPasswordEncoder` 빈 등록 (비밀번호 해시) |
 | `domain/*` | 엔티티. 테이블 구조는 [07-domain-model.md](./07-domain-model.md) 참고 |
 | `repository/*` | `JpaRepository` 를 상속한 인터페이스. 메서드 이름 규칙으로 쿼리 자동 생성 |
+| `service/AuthService` | 회원가입·로그인 (BCrypt, 중복 확인) |
+| `service/UserService` | 프로필 조회·검색·편집 (변경 감지로 UPDATE) |
+| `service/FileStorageService` | 업로드 파일 검증·저장·삭제 (UUID 이름) |
+| `api/UserController` | `/api/users/**` — 조회·검색·편집·이미지 업로드 |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -127,7 +136,6 @@ public class HelloController {
 | `spring-boot-starter-actuator` | compile | `/actuator/health` 등 운영 엔드포인트 |
 | `com.h2database:h2` | runtime | 개발용 파일 DB (별도 설치 불필요) |
 | `spring-boot-h2console` | compile | H2 웹 콘솔(`/h2-console`). **Boot 4 부터는 별도 모듈** |
-
 | `spring-boot-devtools` | runtime | 개발 중 자동 재시작(배포 시 제외) |
 | `spring-boot-starter-webmvc-test` | test | MockMvc 등 웹 계층 테스트 |
 | `spring-boot-starter-validation-test` | test | 검증 관련 테스트 지원 |
@@ -158,8 +166,16 @@ public class HelloController {
 | `spring.servlet.multipart.max-file-size` | `2MB` | multipart 파일 크기 제한 |
 | `spring.servlet.multipart.max-request-size` | `3MB` | multipart 요청 전체 제한 |
 
-테스트 전용 설정은 `backend/src/test/resources/application.properties` 에서 **메모리 DB** 로 덮어씁니다.
-(테스트가 개발용 파일 DB 를 건드리지 않도록)
+테스트 전용 설정은 `backend/src/test/resources/application-test.properties` 에서 **메모리 DB** 로 덮어씁니다.
+(`@ActiveProfiles("test")` 로 적용 — 테스트가 개발용 파일 DB 를 건드리지 않도록)
+
+업로드 설정에 대해:
+
+- `app.upload.dir` 은 `UploadConfig` 가 절대 경로 `Path` 빈으로 바꿔 두고, `WebConfig`(정적 제공)와
+  `FileStorageService`(저장)가 같은 값을 공유합니다.
+- 개발 중 올린 파일은 `backend/uploads/profiles/` 에 쌓이며 `.gitignore` 로 제외됩니다.
+- 테스트는 `app.upload.dir=./target/test-uploads` 로 덮어써서 저장소를 더럽히지 않습니다.
+- 저장·검증 규칙은 [study/04-file-upload.md](./study/04-file-upload.md) 참고.
 
 ## 5. 데이터베이스 (개발용 H2)
 
@@ -177,6 +193,8 @@ public class HelloController {
 | `GodsseBackendApplicationTests` | `@SpringBootTest` 컨텍스트가 정상 기동하는지 확인(`contextLoads`) |
 | `api/HelloControllerTest` | `@SpringBootTest` + `@AutoConfigureMockMvc` 로 HTTP 계층 검증 4건 |
 | `repository/UserRepositoryTest` | 엔티티 매핑/리포지토리 동작 검증 2건 (`@Transactional` 로 롤백) |
+| `api/AuthControllerTest` | 회원가입·로그인·로그아웃·내 정보 검증 8건 |
+| `api/UserControllerTest` | 프로필 조회·검색·편집·이미지 업로드 검증 10건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 

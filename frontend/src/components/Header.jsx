@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router'
 
+import Avatar from '@/components/Avatar.jsx'
 import { useAuth } from '@/context/auth.js'
 
 /** 현재 경로와 같으면 강조 표시를 붙인다(Vue Router 의 router-link-active 와 비슷). */
@@ -24,7 +25,10 @@ function Header() {
         </NavLink>
         {user ? (
           <NavLink className={linkClass} to="/me">
-            {user.nickname}
+            <span className="header__user">
+              <Avatar size="tiny" user={user} />
+              {user.nickname}
+            </span>
           </NavLink>
         ) : (
           <>

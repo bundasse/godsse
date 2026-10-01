@@ -26,15 +26,21 @@ export class ApiError extends Error {
 /**
  * 공통 fetch 래퍼. 개발 중에는 vite.config.js 의 프록시(/api -> 8080)를 사용한다.
  * 서버가 4xx/5xx 를 반환하면 ApiError 를 던지므로 호출부에서 try/catch 로 처리한다.
+ *
+ * @param {string} path 요청 경로 (예: '/api/auth/me')
+ * @param {object} [options] fetch 옵션 + json(기본 true)
+ *   json=false 로 넘기면 Content-Type 을 붙이지 않는다(파일 업로드용).
  */
 async function request(path, options = {}) {
-  const { headers, ...rest } = options
+  const { headers, json = true, ...rest } = options
 
   const response = await fetch(`${BASE_URL}${path}`, {
     // 로그인 상태는 세션 쿠키(JSESSIONID)로 유지되므로 쿠키를 주고받아야 한다.
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
+      // FormData 를 보낼 때는 Content-Type 을 지정하면 안 된다.
+      // 브라우저가 multipart 경계(boundary)를 포함해 직접 만들어야 하기 때문이다.
+      ...(json ? { 'Content-Type': 'application/json' } : {}),
       ...headers,
     },
     ...rest,
@@ -68,6 +74,8 @@ async function request(path, options = {}) {
 export const apiClient = {
   get: (path) => request(path, { method: 'GET' }),
   post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
+  /** 파일 업로드(multipart/form-data) 전용. FormData 를 그대로 넘긴다. */
+  postForm: (path, formData) => request(path, { method: 'POST', body: formData, json: false }),
   put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
   patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (path) => request(path, { method: 'DELETE' }),

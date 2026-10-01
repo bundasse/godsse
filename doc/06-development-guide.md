@@ -167,6 +167,10 @@ cd backend
 | 2026-09-25 | 프론트 인증 — `context/AuthProvider` + `useAuth`, `ProtectedRoute`, 로그인·회원가입 폼, `ApiError`(status/errors) |
 | 2026-09-25 | VS Code 실행 구성 — `.vscode/launch.json`(백엔드/프론트엔드/풀스택), `.vscode/tasks.json`(실행·테스트·빌드·검증) |
 | 2026-09-25 | 검증: 백엔드 테스트 **15건 통과**, 프론트 빌드 성공, 실서버 E2E(가입 201 → me 200 → 로그아웃 204 → me 401 → 로그인 200 → 중복 409) 확인 |
+| 2026-10-01 | 프로필 API — `GET /api/users/{handle}`(감상 수 포함), `PATCH /api/users/me`, `POST /api/users/me/avatar`(multipart), `GET /api/users?q=`(페이지네이션) |
+| 2026-10-01 | 파일 업로드 — `FileStorageService`(UUID 이름·형식/용량 검증·이전 파일 삭제), `/uploads/**` 정적 제공, `MaxUploadSizeExceededException` → 400 |
+| 2026-10-01 | 프론트 — `Avatar`·`UserCard` 컴포넌트, 프로필 조회·편집(이미지 업로드), 유저 검색 화면, `AuthProvider.applyProfile` |
+| 2026-10-01 | 검증: 백엔드 테스트 **25건 통과**, 프론트 빌드(48 modules), 실서버 E2E(프로필 200/404 · 편집 200 · 업로드 200 · 이미지 제공 200 · 이전 파일 삭제 · 검색 200) |
 
 
 

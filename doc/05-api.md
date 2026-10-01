@@ -1,7 +1,7 @@
 # 05. API 명세
 
-> **현재 상태 (2026-09-25)**: 인증(회원가입·로그인·로그아웃·내 정보) API 가 구현되어 있습니다.
-> 프로필·팔로우·리뷰(감상)·피드 API 는 다음 단계에서 이 문서에 추가합니다.
+> **현재 상태 (2026-10-01)**: 인증(회원가입·로그인·로그아웃·내 정보)과 사용자(프로필 조회·검색·편집·이미지 업로드) API 가 구현되어 있습니다.
+> 팔로우·리뷰(감상)·피드 API 는 다음 단계에서 이 문서에 추가합니다.
 > 데이터 구조(테이블)는 [07-domain-model.md](./07-domain-model.md) 를 참고하세요.
 
 
@@ -119,7 +119,104 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 ```
 
 
-## 3. `GET /api/hello`
+## 3. 사용자 (`/api/users`)
+
+### 3.1 `GET /api/users/{handle}` — 프로필 조회
+
+로그인 없이 볼 수 있습니다.
+
+**응답 200**
+
+```json
+{
+  "id": 33,
+  "handle": "godsse",
+  "nickname": "고드세",
+  "bio": "주 1회 크툴루의 부름을 돌립니다.",
+  "profileImageUrl": "/uploads/profiles/1b80d4d9382f46099d7750289783fb9e.png",
+  "createdAt": "2026-09-25T10:01:30.323473Z",
+  "receivedReviewCount": 3,
+  "writtenReviewCount": 5
+}
+```
+
+| 필드 | 설명 |
+| --- | --- |
+| `profileImageUrl` | 이미지를 올리지 않았으면 `null` |
+| `receivedReviewCount` | 이 사람이 받은 감상 수 |
+| `writtenReviewCount` | 이 사람이 쓴 감상 수 |
+
+**응답 404** — 없는 핸들
+
+```json
+{
+  "message": "해당 핸들의 사용자를 찾을 수 없습니다.",
+  "errors": [{ "field": "handle", "reason": "해당 핸들의 사용자를 찾을 수 없습니다." }]
+}
+```
+
+### 3.2 `GET /api/users?q=&page=&size=` — 유저 검색
+
+로그인 없이 사용할 수 있습니다.
+
+| 파라미터 | 기본값 | 설명 |
+| --- | --- | --- |
+| `q` | (없음) | 핸들 또는 닉네임의 일부. 비어 있으면 빈 목록을 반환 |
+| `page` | 0 | 페이지 번호(0부터 시작) |
+| `size` | 20 | 한 페이지 개수 (서버에서 최대 50으로 제한) |
+
+**응답 200**
+
+```json
+{
+  "items": [{ "handle": "godsse", "nickname": "고드세", "profileImageUrl": null }],
+  "page": 0,
+  "size": 20,
+  "total": 1,
+  "totalPages": 1,
+  "hasNext": false
+}
+```
+
+### 3.3 `PATCH /api/users/me` — 프로필 편집 (로그인 필요)
+
+핸들은 주소(`/u/핸들`)에 쓰이므로 바꿀 수 없습니다. 프로필 이미지는 3.4 로 올립니다.
+
+| 필드 | 타입 | 필수 | 규칙 |
+| --- | --- | --- | --- |
+| `nickname` | string | Y | 20자 이하 |
+| `bio` | string | N | 300자 이하 (앞뒤 공백 제거, 비면 `null` 로 저장) |
+
+- **응답 200** — 갱신된 `UserProfileResponse`
+- **응답 400** — 닉네임이 비었거나 길이 초과
+- **응답 401** — 미로그인
+
+### 3.4 `POST /api/users/me/avatar` — 프로필 이미지 업로드 (로그인 필요)
+
+`multipart/form-data` 로 보내며 필드 이름은 **`file`** 입니다. (JSON 이 아님)
+
+| 제한 | 값 |
+| --- | --- |
+| 허용 형식 | PNG · JPEG · GIF · WEBP — Content-Type 과 확장자를 **둘 다** 확인 |
+| 최대 크기 | 2MB (`app.upload.max-bytes`) |
+| 저장 이름 | UUID (원래 파일 이름을 쓰지 않음 → 덮어쓰기·경로 조작·캐시 문제 방지) |
+| 공개 경로 | `/uploads/profiles/{uuid}.{확장자}` |
+
+- **응답 200** — 갱신된 `UserProfileResponse` (새 `profileImageUrl` 포함)
+- **응답 400** — 이미지가 아니거나 크기 초과 (`errors[0].field = "file"`)
+- **응답 401** — 미로그인
+
+```powershell
+# PowerShell 예시 (-F 는 multipart/form-data 로 전송)
+curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar `
+  -F "file=@C:\path\to\photo.png;type=image/png"
+```
+
+> 올린 이미지는 `http://localhost:8080/uploads/profiles/{파일명}` 으로 바로 볼 수 있습니다.
+> (백엔드 `WebConfig` 가 업로드 폴더를 `/uploads/**` URL 에 연결)
+
+
+## 4. `GET /api/hello`
 
 서버 연결 확인용 인사 메시지를 반환합니다.
 
@@ -137,7 +234,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 | `message`   | string | 서버 고정 인사 메시지    |
 | `timestamp` | string | 응답 생성 시각(ISO-8601) |
 
-## 4. `GET /api/hello/{name}`
+## 5. `GET /api/hello/{name}`
 
 경로 변수로 받은 이름이 포함된 인사 메시지를 반환합니다.
 
@@ -153,7 +250,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 
 > 경로 변수는 URL 인코딩이 필요합니다. 프론트엔드의 `fetchHelloTo` 는 `encodeURIComponent` 를 사용합니다.
 
-## 5. `POST /api/hello/echo`
+## 6. `POST /api/hello/echo`
 
 전달받은 값을 검증한 뒤, 앞뒤 공백을 제거한 메시지와 길이를 돌려줍니다.
 
@@ -191,7 +288,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 
 > `errors` 는 **위반한 제약 조건 단위**로 쌓입니다. 예를 들어 `message` 가 빈 문자열이면 `@NotBlank` 와 `@Size(min = 2)` 가 모두 위반되어 같은 필드가 2건 들어갑니다.
 
-## 6. `GET /actuator/health`
+## 7. `GET /actuator/health`
 
 ```json
 { "status": "UP" }
@@ -199,7 +296,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 
 - 노출 엔드포인트는 `application.properties` 의 `management.endpoints.web.exposure.include=health,info` 로 제한되어 있습니다.
 
-## 7. 호출 예시
+## 8. 호출 예시
 
 ```powershell
 # curl.exe 기준
@@ -221,7 +318,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/hello/echo `
 
 > 한글 본문을 PowerShell 로 보낼 때는 인코딩 문제가 생길 수 있으므로 `curl.exe` 사용을 권장합니다.
 
-## 8. 상태 코드 정리
+## 9. 상태 코드 정리
 
 | 상황                     | 상태 코드 | 응답                    |
 | ------------------------ | --------- | ----------------------- |

@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.godsse.backend.api.dto.FieldValidationError;
 import com.godsse.backend.api.dto.ValidationErrorResponse;
@@ -68,6 +69,19 @@ public class ApiExceptionHandler {
 	public ResponseEntity<ValidationErrorResponse> handleUnreadable(HttpMessageNotReadableException exception) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 			.body(new ValidationErrorResponse("요청 본문을 읽을 수 없습니다. JSON 형식을 확인해 주세요.", List.of()));
+	}
+
+	/**
+	 * 업로드 파일이 설정한 크기를 넘을 때 → 400.
+	 *
+	 * <p>
+	 * 이 예외는 컨트롤러에 도달하기 전(요청을 읽는 단계)에 발생하므로 따로 처리해야 한다.
+	 * {@code application.properties} 의 {@code spring.servlet.multipart.max-file-size} 값과 연결된다.
+	 */
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ValidationErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException exception) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+			.body(new ValidationErrorResponse("업로드 파일이 너무 큽니다. 2MB 이하로 올려 주세요.", List.of()));
 	}
 
 }

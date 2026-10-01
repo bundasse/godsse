@@ -23,4 +23,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 	/** 받은 리뷰 개수. */
 	long countByRecipientId(Long recipientId);
 
+	/** 쓴 리뷰 개수. */
+	long countByAuthorId(Long authorId);
+
 }
