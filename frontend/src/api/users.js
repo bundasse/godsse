@@ -33,3 +33,19 @@ export const searchUsers = ({ q, page = 0, size = 20 } = {}) => {
   }
   return apiClient.get(`/api/users?${params.toString()}`)
 }
+
+/** 팔로우(로그인 필요). 성공하면 204(응답 본문 없음). */
+export const followUser = (handle) =>
+  apiClient.post(`/api/users/${encodeURIComponent(handle)}/follow`)
+
+/** 언팔로우(로그인 필요). 성공하면 204. */
+export const unfollowUser = (handle) =>
+  apiClient.delete(`/api/users/${encodeURIComponent(handle)}/follow`)
+
+/** 팔로워 목록(이 사람을 팔로우하는 사람들). */
+export const fetchFollowers = (handle, { page = 0, size = 20 } = {}) =>
+  apiClient.get(`/api/users/${encodeURIComponent(handle)}/followers?page=${page}&size=${size}`)
+
+/** 팔로잉 목록(이 사람이 팔로우하는 사람들). */
+export const fetchFollowing = (handle, { page = 0, size = 20 } = {}) =>
+  apiClient.get(`/api/users/${encodeURIComponent(handle)}/following?page=${page}&size=${size}`)

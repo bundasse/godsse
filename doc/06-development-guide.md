@@ -171,6 +171,10 @@ cd backend
 | 2026-10-01 | 파일 업로드 — `FileStorageService`(UUID 이름·형식/용량 검증·이전 파일 삭제), `/uploads/**` 정적 제공, `MaxUploadSizeExceededException` → 400 |
 | 2026-10-01 | 프론트 — `Avatar`·`UserCard` 컴포넌트, 프로필 조회·편집(이미지 업로드), 유저 검색 화면, `AuthProvider.applyProfile` |
 | 2026-10-01 | 검증: 백엔드 테스트 **25건 통과**, 프론트 빌드(48 modules), 실서버 E2E(프로필 200/404 · 편집 200 · 업로드 200 · 이미지 제공 200 · 이전 파일 삭제 · 검색 200) |
+| 2026-10-02 | 팔로우 기능 — `POST/DELETE /api/users/{handle}/follow`, `GET .../followers`·`.../following`, 프로필 응답에 `followerCount`·`followingCount`·`isFollowing` 추가 |
+| 2026-10-02 | 팔로우 목록을 JPQL(`@Query`)로 작성해 N+1 방지, 정렬은 쿼리 안에 (Pageable Sort 사용 시 오류) |
+| 2026-10-02 | 프론트 — `FollowButton`, `FollowListPage`(팔로워/팔로잉 탭), 프로필의 팔로워·팔로잉 링크 |
+| 2026-10-02 | 검증: 백엔드 테스트 **34건 통과**, 프론트 빌드(50 modules), 실서버 E2E(팔로우 204 · 중복 409 · 자기 400 · 언팔로우 204 · 재언팔로우 404 · 비로그인 401 · 목록 200) |
 
 
 

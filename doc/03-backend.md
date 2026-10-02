@@ -11,6 +11,7 @@ com.godsse.backend
 │  ├─ HelloController.java         # 샘플 API 3개 (연결 확인용)
 │  ├─ AuthController.java          # 회원가입·로그인·로그아웃·내 정보
 │  ├─ UserController.java          # 프로필 조회·검색·편집·이미지 업로드
+│  ├─ FollowController.java        # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  ├─ ApiExceptionHandler.java     # @RestControllerAdvice (예외 → JSON)
 │  └─ dto/                         # 요청/응답 스키마 (record)
 │     ├─ HelloResponse.java
@@ -28,6 +29,7 @@ com.godsse.backend
 ├─ service/                        # 비즈니스 로직 + 트랜잭션 경계
 │  ├─ AuthService.java             # 회원가입·로그인 (중복 확인, BCrypt)
 │  ├─ UserService.java             # 사용자 조회·검색·프로필 편집
+│  ├─ FollowService.java           # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  └─ FileStorageService.java      # 업로드 파일 저장·검증·삭제 (UUID 이름)
 ├─ common/                         # 공통 상수·인증 보조
 │  ├─ SessionKeys.java             # 세션 키 상수
@@ -94,8 +96,10 @@ com.godsse.backend
 | `repository/*` | `JpaRepository` 를 상속한 인터페이스. 메서드 이름 규칙으로 쿼리 자동 생성 |
 | `service/AuthService` | 회원가입·로그인 (BCrypt, 중복 확인) |
 | `service/UserService` | 프로필 조회·검색·편집 (변경 감지로 UPDATE) |
+| `service/FollowService` | 팔로우·언팔로우 (자기 자신·중복 차단) |
 | `service/FileStorageService` | 업로드 파일 검증·저장·삭제 (UUID 이름) |
 | `api/UserController` | `/api/users/**` — 조회·검색·편집·이미지 업로드 |
+| `api/FollowController` | `/api/users/{handle}/follow`·`followers`·`following` |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -195,6 +199,7 @@ public class HelloController {
 | `repository/UserRepositoryTest` | 엔티티 매핑/리포지토리 동작 검증 2건 (`@Transactional` 로 롤백) |
 | `api/AuthControllerTest` | 회원가입·로그인·로그아웃·내 정보 검증 8건 |
 | `api/UserControllerTest` | 프로필 조회·검색·편집·이미지 업로드 검증 10건 |
+| `api/FollowControllerTest` | 팔로우·언팔로우·목록 검증 9건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 

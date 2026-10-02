@@ -111,6 +111,14 @@ npm run dev
 | POST   | `/api/auth/login`   | 로그인(핸들·비밀번호)                 |
 | POST   | `/api/auth/logout`  | 로그아웃 (204, 본문 없음)             |
 | GET    | `/api/auth/me`      | 로그인한 사용자 정보 (미로그인 시 401) |
+| GET    | `/api/users/{handle}` | 프로필 조회(감상·팔로워 수, `isFollowing`) |
+| GET    | `/api/users?q=`     | 유저 검색(핸들·닉네임)                |
+| PATCH  | `/api/users/me`     | 프로필 편집(닉네임·자기소개)          |
+| POST   | `/api/users/me/avatar` | 프로필 이미지 업로드(multipart)    |
+| POST   | `/api/users/{handle}/follow` | 팔로우 (204)                  |
+| DELETE | `/api/users/{handle}/follow` | 언팔로우 (204)                |
+| GET    | `/api/users/{handle}/followers` | 팔로워 목록               |
+| GET    | `/api/users/{handle}/following` | 팔로잉 목록               |
 
 `POST /api/hello/echo` 요청 예시:
 

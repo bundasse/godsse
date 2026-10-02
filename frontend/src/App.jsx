@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router'
 import ProtectedRoute from '@/components/ProtectedRoute.jsx'
 import { AuthProvider } from '@/context/AuthProvider.jsx'
 import AppLayout from '@/layouts/AppLayout.jsx'
+import FollowListPage from '@/pages/FollowListPage.jsx'
 import HomePage from '@/pages/HomePage.jsx'
 import LoginPage from '@/pages/LoginPage.jsx'
 import MyPage from '@/pages/MyPage.jsx'
@@ -39,6 +40,7 @@ function App() {
           <Route path="u/:handle" element={<ProfilePage />} />
           <Route path="u/:handle/received" element={<ReceivedReviewListPage />} />
           <Route path="u/:handle/written" element={<WrittenReviewListPage />} />
+          <Route path="u/:handle/follows" element={<FollowListPage />} />
           <Route path="reviews/:id" element={<ReviewDetailPage />} />
           <Route
             path="reviews/new"

@@ -60,10 +60,14 @@ public class UserController {
 
 	/**
 	 * 프로필 조회. 로그인하지 않아도 볼 수 있다.
+	 *
+	 * <p>
+	 * 로그인한 상태라면 {@code isFollowing}(내가 이 사람을 팔로우 중인지)도 함께 내려간다.
 	 */
 	@GetMapping("/{handle}")
-	public UserProfileDetailResponse profile(@PathVariable String handle) {
-		return this.userService.getProfile(handle);
+	public UserProfileDetailResponse profile(@PathVariable String handle,
+			@LoginUser(required = false) User viewer) {
+		return this.userService.getProfile(handle, viewer);
 	}
 
 	/**

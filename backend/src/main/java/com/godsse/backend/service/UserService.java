@@ -14,6 +14,7 @@ import com.godsse.backend.api.dto.UserProfileResponse;
 import com.godsse.backend.api.dto.UserSummary;
 import com.godsse.backend.common.exception.NotFoundException;
 import com.godsse.backend.domain.User;
+import com.godsse.backend.repository.FollowRepository;
 import com.godsse.backend.repository.ReviewRepository;
 import com.godsse.backend.repository.UserRepository;
 
@@ -35,12 +36,14 @@ public class UserService {
 
 	private final UserRepository userRepository;
 	private final ReviewRepository reviewRepository;
+	private final FollowRepository followRepository;
 	private final FileStorageService fileStorageService;
 
 	public UserService(UserRepository userRepository, ReviewRepository reviewRepository,
-			FileStorageService fileStorageService) {
+			FollowRepository followRepository, FileStorageService fileStorageService) {
 		this.userRepository = userRepository;
 		this.reviewRepository = reviewRepository;
+		this.followRepository = followRepository;
 		this.fileStorageService = fileStorageService;
 	}
 
@@ -63,14 +66,26 @@ public class UserService {
 		return this.userRepository.existsByHandle(handle);
 	}
 
-	/** 프로필 화면용 정보(받은/쓴 감상 수 포함). */
-	public UserProfileDetailResponse getProfile(String handle) {
+	/**
+	 * 프로필 화면용 정보.
+	 *
+	 * <p>
+	 * 감상 수와 팔로워/팔로잉 수까지 함께 담는다. {@code viewer} 는 "지금 보고 있는 사람"이며
+	 * 로그인하지 않았다면 null 이다(그때는 {@code isFollowing} 이 false).
+	 */
+	public UserProfileDetailResponse getProfile(String handle, User viewer) {
 		User user = getByHandle(handle);
 
 		long receivedReviewCount = this.reviewRepository.countByRecipientId(user.getId());
 		long writtenReviewCount = this.reviewRepository.countByAuthorId(user.getId());
+		long followerCount = this.followRepository.countByFollowingId(user.getId());
+		long followingCount = this.followRepository.countByFollowerId(user.getId());
 
-		return UserProfileDetailResponse.of(user, receivedReviewCount, writtenReviewCount);
+		boolean isFollowing = viewer != null
+				&& this.followRepository.existsByFollowerIdAndFollowingId(viewer.getId(), user.getId());
+
+		return UserProfileDetailResponse.of(user, receivedReviewCount, writtenReviewCount, followerCount,
+				followingCount, isFollowing);
 	}
 
 	/**

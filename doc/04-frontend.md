@@ -11,14 +11,14 @@
 | `src/App.jsx` | **라우트 표**. 어떤 URL 에 어떤 페이지를 보여 줄지 정의 |
 | `src/layouts/AppLayout.jsx` | 공통 뼈대(헤더 + 본문 + 모바일 하단 탭), `<Outlet />` 자리에 페이지가 들어감 |
 | `src/layouts/AppLayout.css` | 헤더/하단 탭/본문 폭, 반응형 규칙 |
-| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute, Avatar, UserCard) |
+| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute, Avatar, UserCard, FollowButton) |
 | `src/context/auth.js` | 로그인 상태 컨텍스트 정의 + `useAuth()` 훅 |
 | `src/context/AuthProvider.jsx` | 로그인 상태를 앱에 공급(시작 시 `/api/auth/me` 로 복원) |
 | `src/pages/` | 화면 단위 컴포넌트 (라우트 1개 = 파일 1개) |
 | `src/api/client.js` | 공통 fetch 래퍼(JSON 직렬화, 에러 변환, `get/post/put/delete`) |
 | `src/api/greeting.js` | `/api/hello` 샘플 API 함수 (연결 확인용) |
 | `src/api/auth.js` | 회원가입·로그인·로그아웃·내 정보 API 함수 |
-| `src/api/users.js` | 프로필 조회·편집, 이미지 업로드, 유저 검색 API 함수 |
+| `src/api/users.js` | 프로필 조회·편집, 이미지 업로드, 유저 검색, 팔로우·팔로워/팔로잉 목록 API 함수 |
 | `src/constants/` | 태그·룰·스포일러 마커처럼 화면과 서버가 공유하는 상수 |
 | `src/App.css` | 페이지/카드/폼/버튼 등 공용 클래스 |
 | `src/index.css` | CSS 변수(색상·치수)·기본 리셋·폰트 |

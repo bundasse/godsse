@@ -136,7 +136,10 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
   "profileImageUrl": "/uploads/profiles/1b80d4d9382f46099d7750289783fb9e.png",
   "createdAt": "2026-09-25T10:01:30.323473Z",
   "receivedReviewCount": 3,
-  "writtenReviewCount": 5
+  "writtenReviewCount": 5,
+  "followerCount": 12,
+  "followingCount": 8,
+  "isFollowing": false
 }
 ```
 
@@ -145,6 +148,9 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 | `profileImageUrl` | 이미지를 올리지 않았으면 `null` |
 | `receivedReviewCount` | 이 사람이 받은 감상 수 |
 | `writtenReviewCount` | 이 사람이 쓴 감상 수 |
+| `followerCount` | 이 사람을 팔로우하는 사람 수 |
+| `followingCount` | 이 사람이 팔로우하는 사람 수 |
+| `isFollowing` | **조회자**가 이 사람을 팔로우 중인지. 로그인하지 않았다면 `false` |
 
 **응답 404** — 없는 핸들
 
@@ -214,6 +220,48 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > 올린 이미지는 `http://localhost:8080/uploads/profiles/{파일명}` 으로 바로 볼 수 있습니다.
 > (백엔드 `WebConfig` 가 업로드 폴더를 `/uploads/**` URL 에 연결)
+
+### 3.5 `POST /api/users/{handle}/follow` — 팔로우 (로그인 필요)
+
+- **응답 204** — 본문 없음
+- **응답 400** — 자기 자신을 팔로우 (`errors[0].field = "handle"`)
+- **응답 401** — 미로그인
+- **응답 404** — 없는 핸들
+- **응답 409** — 이미 팔로우한 사용자
+
+### 3.6 `DELETE /api/users/{handle}/follow` — 언팔로우 (로그인 필요)
+
+- **응답 204** — 본문 없음
+- **응답 401** — 미로그인
+- **응답 404** — 팔로우하고 있지 않음
+
+### 3.7 `GET /api/users/{handle}/followers` — 팔로워 목록
+
+이 사람을 팔로우하는 사람들. 로그인 없이 볼 수 있습니다.
+
+- **응답 200** — `PageResponse<UserSummary>` (최근 팔로우한 순)
+- **응답 404** — 없는 핸들
+
+### 3.8 `GET /api/users/{handle}/following` — 팔로잉 목록
+
+이 사람이 팔로우하는 사람들. 응답 형태는 3.7 과 같습니다.
+
+```json
+{
+  "items": [{ "handle": "godsse", "nickname": "고드세", "profileImageUrl": null }],
+  "page": 0,
+  "size": 20,
+  "total": 1,
+  "totalPages": 1,
+  "hasNext": false
+}
+```
+
+| 파라미터 | 기본값 | 설명 |
+| --- | --- | --- |
+| `page` | 0 | 페이지 번호 |
+| `size` | 20 | 한 페이지 개수 (서버에서 최대 50) |
+
 
 
 ## 4. `GET /api/hello`
