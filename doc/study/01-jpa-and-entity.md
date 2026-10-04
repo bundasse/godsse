@@ -38,7 +38,6 @@ String sql = "INSERT INTO users (handle, email, password_hash, nickname) VALUES 
 - 조회: `findByHandle("godsse")` → `SELECT ... WHERE handle = ?` 자동 실행
 - 테이블 생성: 엔티티 필드를 보고 `CREATE TABLE` / `ALTER TABLE` 자동 실행
   (`spring.jpa.hibernate.ddl-auto=update` 설정, 개발용)
-** 여기까지 읽음 **
 
 ## 3. 이 프로젝트에서는
 
@@ -192,3 +191,4 @@ class UserRepositoryTest {
 
 - 도메인/테이블 상세 → [../07-domain-model.md](../07-domain-model.md)
 - 백엔드 구조 → [../03-backend.md](../03-backend.md)
+** 여기까지 읽음 **
