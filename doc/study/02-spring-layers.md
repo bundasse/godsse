@@ -136,3 +136,4 @@ public ResponseEntity<ValidationErrorResponse> handleBusiness(BusinessException 
 - API 명세 → [../05-api.md](../05-api.md)
 - 백엔드 구조 → [../03-backend.md](../03-backend.md)
 - 세션 로그인 → [03-session-login.md](./03-session-login.md)
+** 여기까지 읽음 **
