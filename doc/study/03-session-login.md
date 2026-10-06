@@ -63,7 +63,7 @@ HTTP 는 상태가 없어서, 서버는 두 번째 요청이 "아까 그 사람"
 | `application.properties` | 세션 쿠키(HttpOnly, SameSite), 유효 시간 |
 | `frontend/src/context/AuthProvider.jsx` | 앱 시작 시 `/api/auth/me` 로 로그인 복원 |
 | `frontend/src/api/client.js` | `credentials: 'include'`, 401 → `ApiError` |
-
+** 여기까지 읽음 **
 ## 4. 예제 코드
 
 ### 4.1 세션에는 "사용자 번호"만 담는다
