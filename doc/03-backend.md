@@ -1,5 +1,5 @@
 # 03. 백엔드 (Spring Boot)
-
+깃허브 잔디 트리거 당기기 용
 기준 경로: `backend/src/main/java/com/godsse/backend`
 
 ## 1. 패키지 구조
