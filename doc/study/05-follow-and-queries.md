@@ -88,7 +88,7 @@ Page<User> findFollowerUsers(@Param("userId") Long userId, Pageable pageable);
 > ⚠️ **정렬 주의**: `@Query` 를 쓸 때 `Pageable` 에 `Sort` 를 담아 넘기면 Spring Data 가 JPQL 의
 > 별칭을 해석하지 못해 오류가 납니다. 정렬은 위처럼 **쿼리 안에** 적고, `Pageable` 에는
 > 페이지 정보만 담습니다.
-** 여기까지 읽음 **
+
 ### 3.3 자기 자신·중복 검사
 
 ```java
@@ -140,3 +140,4 @@ boolean isFollowing = viewer != null
 - 도메인 모델(`follows` 테이블) → [../07-domain-model.md](../07-domain-model.md)
 - API 명세(팔로우) → [../05-api.md](../05-api.md)
 - JPA 와 엔티티 → [01-jpa-and-entity.md](./01-jpa-and-entity.md)
+** 여기까지 읽음 **
