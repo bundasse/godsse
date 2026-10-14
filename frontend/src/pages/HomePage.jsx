@@ -1,34 +1,69 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 
-import PagePlaceholder from '@/components/PagePlaceholder.jsx'
+import { fetchReviews } from '@/api/reviews.js'
+import ReviewCard from '@/components/ReviewCard.jsx'
+import { useAuth } from '@/context/auth.js'
 
 function HomePage() {
-  return (
-    <PagePlaceholder
-      title="godsse"
-      description="함께 플레이한 사람에게 남긴 감상과, 내가 받은 감상을 모아 보는 공간입니다."
-    >
-      <div className="card">
-        <h2 className="card__title">화면 준비 중</h2>
-        <p className="text--muted">
-          다음 단계에서 팔로우한 사람들의 최신 감상이 카드로 표시됩니다. (긴 글은 3줄까지만 보이고,
-          누르면 전문 페이지로 이동합니다)
-        </p>
-        <p className="text--muted">
-          먼저 <Link to="/signup">회원가입</Link> 하거나 <Link to="/login">로그인</Link> 해 주세요.
-        </p>
-      </div>
+  const { user } = useAuth()
+  const [result, setResult] = useState({ loaded: false, data: null, error: null })
 
-      <div className="card">
-        <h2 className="card__title">만들어질 화면</h2>
-        <ul className="text--muted">
-          <li>홈 — 최신 감상 피드</li>
-          <li>유저 검색 — 핸들·닉네임으로 사람 찾기</li>
-          <li>감상 쓰기 — 날짜·룰 필수, 시나리오 선택, 100자 이상</li>
-          <li>마이페이지 — 받은 감상 카드 + 세션 일정 달력</li>
-        </ul>
-      </div>
-    </PagePlaceholder>
+  useEffect(() => {
+    let ignore = false
+
+    fetchReviews()
+      .then((data) => {
+        if (!ignore) setResult({ loaded: true, data, error: null })
+      })
+      .catch((apiError) => {
+        if (!ignore) setResult({ loaded: true, data: null, error: apiError.message })
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  return (
+    <section className="page">
+      <h1 className="page__title">godsse</h1>
+      <p className="page__description">
+        함께 플레이한 사람에게 남긴 감상과, 내가 받은 감상을 모아 보는 공간입니다.
+      </p>
+
+      {!user && (
+        <div className="card">
+          <p className="text--muted">
+            <Link to="/signup">회원가입</Link> 하거나 <Link to="/login">로그인</Link> 하면 감상을
+            남길 수 있습니다.
+          </p>
+        </div>
+      )}
+
+      {!result.loaded && <p className="text--muted">불러오는 중...</p>}
+      {result.error && <p className="text--error">{result.error}</p>}
+
+      {result.data && (
+        <>
+          <h2 className="card__title">최근 공개 감상</h2>
+
+          {result.data.total === 0 ? (
+            <p className="text--muted">
+              아직 공개된 감상이 없습니다. <Link to="/reviews/new">첫 감상</Link>을 남겨 보세요!
+            </p>
+          ) : (
+            <ul className="list">
+              {result.data.items.map((review) => (
+                <li key={review.id}>
+                  <ReviewCard review={review} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 

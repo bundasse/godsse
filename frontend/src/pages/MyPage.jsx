@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 
+import ReviewList from '@/components/ReviewList.jsx'
 import { useAuth } from '@/context/auth.js'
 
 function MyPage() {
@@ -28,28 +29,34 @@ function MyPage() {
           <dt>가입일</dt>
           <dd>{new Date(user.createdAt).toLocaleDateString('ko-KR')}</dd>
         </dl>
+
+        <div className="form__actions">
+          <Link className="button button--muted" to="/me/edit">
+            프로필 편집
+          </Link>
+          <Link className="button button--muted" to={`/u/${user.handle}`}>
+            공개 프로필
+          </Link>
+          <button className="button button--muted" type="button" onClick={handleLogout}>
+            로그아웃
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2 className="card__title">받은 감상</h2>
+        <ReviewList handle={user.handle} kind="received" />
         <p className="text--muted">
-          <Link to="/me/edit">프로필 편집</Link> 은 다음 단계(1-2)에서 연결합니다.
+          <Link to={`/u/${user.handle}/received`}>받은 감상 전체 보기</Link>
         </p>
       </div>
 
       <div className="card">
-        <h2 className="card__title">받은 감상 (탭 1)</h2>
+        <h2 className="card__title">세션 일정 달력</h2>
         <p className="text--muted">
-          카드 형태로 보여 주고, 긴 글은 3줄까지만 표시한 뒤 클릭하면 전문 페이지로 이동합니다.
+          앞으로 플레이할 세션을 날짜별로 기록합니다. (다음 단계에서 연결합니다)
         </p>
       </div>
-
-      <div className="card">
-        <h2 className="card__title">세션 일정 달력 (탭 2)</h2>
-        <p className="text--muted">
-          앞으로 플레이할 세션을 날짜별로 기록합니다. 플레이를 마친 일정은 감상 쓰기로 이어집니다.
-        </p>
-      </div>
-
-      <button className="button button--muted" type="button" onClick={handleLogout}>
-        로그아웃
-      </button>
     </section>
   )
 }

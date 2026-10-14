@@ -1,15 +1,19 @@
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 
-import PagePlaceholder from '@/components/PagePlaceholder.jsx'
+import ReviewList from '@/components/ReviewList.jsx'
 
 function ReceivedReviewListPage() {
   const { handle } = useParams()
 
   return (
-    <PagePlaceholder
-      title={`@${handle} 님이 받은 감상`}
-      description="받은 감상을 카드 목록으로 보여 주는 화면입니다(페이지 단위로 나눠 불러옵니다)."
-    />
+    <section className="page">
+      <h1 className="page__title">@{handle} 님이 받은 감상</h1>
+      <p className="text--muted">
+        <Link to={`/u/${handle}`}>프로필로 돌아가기</Link>
+      </p>
+
+      <ReviewList handle={handle} kind="received" />
+    </section>
   )
 }
 
