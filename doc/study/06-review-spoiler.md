@@ -150,3 +150,4 @@ function InlineText({ text, interactive }) {
 - API 명세(감상) → [../05-api.md](../05-api.md)
 - 도메인 모델(`reviews` 테이블) → [../07-domain-model.md](../07-domain-model.md)
 - 팔로우와 JPQL → [05-follow-and-queries.md](./05-follow-and-queries.md)
+** 여기까지 읽음 **
