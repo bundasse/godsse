@@ -63,6 +63,26 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 	/** 홈 피드 — 전체 공개 감상만, 플레이 날짜 최신순. */
 	Page<Review> findByVisibilityOrderByPlayedOnDescCreatedAtDesc(Visibility visibility, Pageable pageable);
 
+	/**
+	 * 팔로우 피드 — 내가 팔로우한 사람들의 감상.
+	 *
+	 * <p>
+	 * 내가 팔로우하는 사람이 쓴 글이므로 PUBLIC·FOLLOWERS 는 물론이고,
+	 * 나에게 남긴 감상(recipient)까지 함께 보인다.
+	 */
+	@Query("""
+			select r from Review r
+			where exists (select 1 from Follow f
+			              where f.follower.id = :viewerId and f.following.id = r.author.id)
+			  and (r.visibility = :publicVisibility
+			       or r.visibility = :followersVisibility
+			       or r.recipient.id = :viewerId)
+			order by r.playedOn desc, r.createdAt desc
+			""")
+	Page<Review> findFeedVisibleTo(@Param("viewerId") Long viewerId,
+			@Param("publicVisibility") Visibility publicVisibility,
+			@Param("followersVisibility") Visibility followersVisibility, Pageable pageable);
+
 	/** 받은 리뷰 개수(공개 범위와 무관한 전체 수). */
 	long countByRecipientId(Long recipientId);
 

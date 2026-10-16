@@ -12,20 +12,29 @@ export const createReview = (body) => apiClient.post('/api/reviews', body)
 /** 감상 전문. 공개 범위 밖이면 403(ApiError). */
 export const fetchReview = (id) => apiClient.get(`/api/reviews/${id}`)
 
-/**
- * 감상 목록.
+/** 감상 목록.
  *
  * - 인자를 주지 않으면 홈 피드(전체 공개, 최신순)
+ * - `{ following: true }` → 내가 팔로우한 사람들의 감상 (로그인 필요)
  * - `{ author }` → 그 사람이 쓴 감상
  * - `{ recipient }` → 그 사람이 받은 감상
  */
-export const fetchReviews = ({ author, recipient, page = 0, size = 20 } = {}) => {
+export const fetchReviews = ({
+  author,
+  recipient,
+  following = false,
+  page = 0,
+  size = 20,
+} = {}) => {
   const params = new URLSearchParams({ page: String(page), size: String(size) })
   if (author) {
     params.set('author', author)
   }
   if (recipient) {
     params.set('recipient', recipient)
+  }
+  if (following) {
+    params.set('following', 'true')
   }
   return apiClient.get(`/api/reviews?${params.toString()}`)
 }

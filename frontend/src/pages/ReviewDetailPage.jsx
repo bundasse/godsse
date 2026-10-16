@@ -104,6 +104,9 @@ function ReviewDetailPage() {
 
         {review.editable && (
           <div className="form__actions">
+            <Link className="button" to={`/reviews/${review.id}/edit`}>
+              수정
+            </Link>
             <button className="button button--muted" type="button" onClick={handleDelete}>
               삭제
             </button>

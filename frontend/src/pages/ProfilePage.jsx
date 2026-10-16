@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router'
 import { fetchUserProfile } from '@/api/users.js'
 import Avatar from '@/components/Avatar.jsx'
 import FollowButton from '@/components/FollowButton.jsx'
+import ShareButton from '@/components/ShareButton.jsx'
 import { useAuth } from '@/context/auth.js'
 
 function ProfilePage() {
@@ -94,18 +95,30 @@ function ProfilePage() {
           <span>{new Date(profile.createdAt).toLocaleDateString('ko-KR')} 가입</span>
         </div>
 
-        {isMe && (
+        {isMe ? (
           <p className="text--muted">
             <Link to="/me/edit">프로필 편집</Link>
           </p>
+        ) : (
+          <div className="form__actions">
+            <Link className="button" to={`/reviews/new?to=${profile.handle}`}>
+              감상 남기기
+            </Link>
+            <ShareButton
+              label="감상 요청 링크 복사"
+              url={`${window.location.origin}/reviews/new?to=${profile.handle}`}
+            />
+          </div>
         )}
       </div>
 
       <div className="card">
-        <h2 className="card__title">받은 감상</h2>
+        <h2 className="card__title">감상</h2>
         <p className="text--muted">
-          <Link to={`/u/${profile.handle}/received`}>받은 감상 전체 보기</Link> — 감상 기능은 1-4
-          에서 연결합니다.
+          <Link to={`/u/${profile.handle}/received`}>
+            받은 감상 {profile.receivedReviewCount}건
+          </Link>{' '}
+          · <Link to={`/u/${profile.handle}/written`}>쓴 감상 {profile.writtenReviewCount}건</Link>
         </p>
       </div>
     </section>

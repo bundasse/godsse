@@ -12,6 +12,7 @@ import ProfileEditPage from '@/pages/ProfileEditPage.jsx'
 import ProfilePage from '@/pages/ProfilePage.jsx'
 import ReceivedReviewListPage from '@/pages/ReceivedReviewListPage.jsx'
 import ReviewDetailPage from '@/pages/ReviewDetailPage.jsx'
+import ReviewEditPage from '@/pages/ReviewEditPage.jsx'
 import ReviewNewPage from '@/pages/ReviewNewPage.jsx'
 import SearchPage from '@/pages/SearchPage.jsx'
 import SignupPage from '@/pages/SignupPage.jsx'
@@ -47,6 +48,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ReviewNewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reviews/:id/edit"
+            element={
+              <ProtectedRoute>
+                <ReviewEditPage />
               </ProtectedRoute>
             }
           />

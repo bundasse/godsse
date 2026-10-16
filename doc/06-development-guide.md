@@ -124,6 +124,7 @@ cd backend
 | 테스트에서 `Could not resolve placeholder 'app.cors.allowed-origins'` | `src/test/resources/application.properties` 가 같은 이름이라 기본 설정을 **통째로 대체**함 | 테스트 덮어쓰기는 `application-test.properties` + `@ActiveProfiles("test")` 로 한다 |
 | 설정을 고쳐도 이전 설정이 계속 적용됨                    | `target/test-classes` 에 이전 리소스가 남아 있음          | `.\mvnw.cmd clean test` 로 정리 후 실행                                    |
 | PowerShell 에서 `curl.exe -d '{...}'` 본문이 깨져 400 (JSON parse error) | PowerShell 이 따옴표를 벗겨 전달함 | 본문을 UTF-8 파일로 저장하고 `--data-binary "@파일"` 로 보낸다 ([05-api.md](./05-api.md) 2.5 참고) |
+| PowerShell 로 한글 JSON 응답을 파싱하면 `ConvertFrom-Json` 오류 | `Get-Content` 가 UTF-8 을 기본 인코딩(CP949)으로 읽어 한글 바이트가 인용부호를 삼킴 | `Get-Content -Raw -Encoding UTF8` 로 읽는다 |
 
 
 
@@ -175,6 +176,14 @@ cd backend
 | 2026-10-02 | 팔로우 목록을 JPQL(`@Query`)로 작성해 N+1 방지, 정렬은 쿼리 안에 (Pageable Sort 사용 시 오류) |
 | 2026-10-02 | 프론트 — `FollowButton`, `FollowListPage`(팔로워/팔로잉 탭), 프로필의 팔로워·팔로잉 링크 |
 | 2026-10-02 | 검증: 백엔드 테스트 **34건 통과**, 프론트 빌드(50 modules), 실서버 E2E(팔로우 204 · 중복 409 · 자기 400 · 언팔로우 204 · 재언팔로우 404 · 비로그인 401 · 목록 200) |
+| 2026-10-14 | 감상(리뷰) 기능 — 작성(`POST /api/reviews`)·목록(쓴/받은/홈 피드)·전문·수정·삭제, **100자 이상** 검증, 공개 범위(PUBLIC/FOLLOWERS/PRIVATE) 적용 |
+| 2026-10-14 | 스포일러 처리 — `\|\|문장\|\|`(가리기)·`:::spoiler`(접기) 마커를 **원문 그대로 저장**, 화면에서 해석(`SpoilerText`), 목록은 `ReviewPreview` 로 안전하게 잘라 전달 |
+| 2026-10-14 | 화면 — 감상 작성(스포일러 도구·실시간 미리보기), 감상 전문, 받은/쓴 감상 목록, 마이페이지 받은 감상 카드, 홈 피드 |
+| 2026-10-15 | 문서 갱신 — 05-api 감상 섹션, 03/04 구조·라우트 표, README API 표, [study/06-review-spoiler.md](./study/06-review-spoiler.md) 학습 노트 |
+| 2026-10-15 | 검증: 백엔드 테스트 **53건 통과**, 프론트 빌드(57 modules), 실서버 E2E(작성 201 · 조회 200/403 · 99자 400 · 수정 403/200 · 삭제 204/404 · 목록에 전문 미포함) |
+| 2026-10-15 | Phase 1 마감 다듬기 — 감상 수정 화면(`ReviewForm` 공용화 + `/reviews/:id/edit`), 감상 요청 링크 복사 버튼, 프로필 이미지 즉시 미리보기 |
+| 2026-10-15 | `GET /api/reviews?following=true` 추가 — 내가 팔로우한 사람들의 감상(로그인 필요, 미로그인 401). 홈에 "팔로우한 사람들의 감상" 섹션 |
+| 2026-10-15 | 검증: 백엔드 테스트 **55건 통과**, 프론트 빌드(60 modules), SPA 라우트 200, 팔로우 피드 E2E(미로그인 401 · 팔로우 전 0건 · 팔로우 후 1건) |
 
 
 

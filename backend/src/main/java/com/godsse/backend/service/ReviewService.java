@@ -15,6 +15,7 @@ import com.godsse.backend.api.dto.ReviewUpdateRequest;
 import com.godsse.backend.common.exception.BadRequestException;
 import com.godsse.backend.common.exception.ForbiddenException;
 import com.godsse.backend.common.exception.NotFoundException;
+import com.godsse.backend.common.exception.UnauthorizedException;
 import com.godsse.backend.domain.Review;
 import com.godsse.backend.domain.User;
 import com.godsse.backend.domain.enums.SpoilerMode;
@@ -135,6 +136,21 @@ public class ReviewService {
 	public Page<ReviewSummary> feed(Pageable pageable) {
 		return this.reviewRepository
 			.findByVisibilityOrderByPlayedOnDescCreatedAtDesc(Visibility.PUBLIC, pageable)
+			.map(ReviewSummary::of);
+	}
+
+	/**
+	 * 팔로우 피드 — 내가 팔로우한 사람들의 감상.
+	 *
+	 * @throws UnauthorizedException 로그인하지 않았을 때 (401)
+	 */
+	public Page<ReviewSummary> feedFollowing(User viewer, Pageable pageable) {
+		if (viewer == null) {
+			throw new UnauthorizedException("팔로우 피드는 로그인이 필요합니다.");
+		}
+
+		return this.reviewRepository
+			.findFeedVisibleTo(viewer.getId(), Visibility.PUBLIC, Visibility.FOLLOWERS, pageable)
 			.map(ReviewSummary::of);
 	}
 

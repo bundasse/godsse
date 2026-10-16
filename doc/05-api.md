@@ -264,7 +264,114 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 
 
-## 4. `GET /api/hello`
+## 4. 감상 (`/api/reviews`)
+
+감상은 "누가 누구에게, 어느 세션(1회 플레이)에서 무엇을 느꼈는지"를 남기는 글입니다.
+본문의 스포일러 마커는 **해석하지 않고 그대로 저장**하고, 화면에서 가립니다.
+
+### 4.1 `POST /api/reviews` — 감상 작성 (로그인 필요)
+
+| 필드 | 타입 | 필수 | 규칙 |
+| --- | --- | --- | --- |
+| `toHandle` | string | Y | 감상을 받을 사람의 핸들 (자기 자신은 불가) |
+| `playedOn` | date | Y | `2026-10-01` 형식, **오늘까지만** |
+| `ruleName` | string | Y | 50자 이하 |
+| `scenarioName` | string | N | 100자 이하 |
+| `body` | string | Y | **100자 이상** 10000자 이하 |
+| `spoilerMode` | string | N | `NONE` / `BLUR` / `FOLD` (기본 `NONE`) |
+| `visibility` | string | N | `PUBLIC` / `FOLLOWERS` / `PRIVATE` (기본 `PUBLIC`) |
+| `tags` | string[] | N | 최대 8개 (예: `["RP","HORROR"]`) |
+
+**응답 201**
+
+```json
+{
+  "id": 1,
+  "author": { "handle": "writer", "nickname": "고드세", "profileImageUrl": null },
+  "recipient": { "handle": "partner", "nickname": "파트너", "profileImageUrl": null },
+  "playedOn": "2026-10-01",
+  "ruleName": "크툴루의 부름 7판",
+  "scenarioName": "밤의 미궁",
+  "body": "오늘 정말 즐거웠습니다. ||범인은 집사였습니다.|| 다음에도 또 해요!",
+  "spoilerMode": "NONE",
+  "visibility": "PUBLIC",
+  "tags": ["RP", "HORROR"],
+  "createdAt": "2026-10-14T12:49:26.433822Z",
+  "updatedAt": "2026-10-14T12:49:26.433822Z",
+  "editable": true
+}
+```
+
+- **응답 400** — 본문 100자 미만(`errors[0].field = "body"`), 날짜 누락·미래, 자기 자신
+- **응답 401 / 404** — 미로그인 / 없는 핸들
+
+### 4.2 `GET /api/reviews` — 감상 목록
+
+로그인 없이도 볼 수 있습니다(공개 범위 안에서).
+
+| 파라미터 | 기본값 | 설명 |
+| --- | --- | --- |
+| `author` | (없음) | 이 사람이 **쓴** 감상 |
+| `recipient` | (없음) | 이 사람이 **받은** 감상 |
+| `following` | `false` | `true` 면 **내가 팔로우한 사람들의 감상**만 (로그인 필요, 미로그인이면 401) |
+| `page` / `size` | 0 / 20 | 페이지 (size 최대 50) |
+
+파라미터를 주지 않으면 **홈 피드**(전체 공개 감상, 최신순)입니다.
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "author": { "handle": "writer", "nickname": "고드세", "profileImageUrl": null },
+      "recipient": { "handle": "partner", "nickname": "파트너", "profileImageUrl": null },
+      "playedOn": "2026-10-01",
+      "ruleName": "크툴루의 부름 7판",
+      "scenarioName": "밤의 미궁",
+      "bodyPreview": "오늘 정말 즐거웠습니다. …",
+      "spoilerMode": "NONE",
+      "tags": ["RP"],
+      "createdAt": "2026-10-14T12:49:26.433823Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "total": 1,
+  "totalPages": 1,
+  "hasNext": false
+}
+```
+
+> 목록은 본문 전문 대신 **미리보기(`bodyPreview`)** 를 내려줍니다. 자를 때 스포일러 마커가 잘려
+> 나가지 않도록 안전하게 자릅니다. ([study/06-review-spoiler.md](./study/06-review-spoiler.md) 참고)
+
+### 4.3 `GET /api/reviews/{id}` — 감상 전문
+
+- **응답 200** — `ReviewResponse` (`editable` 로 수정·삭제 가능 여부를 알려 준다)
+- **응답 403** — 공개 범위 밖
+- **응답 404** — 없는 감상
+
+### 4.4 `PATCH /api/reviews/{id}` · `DELETE /api/reviews/{id}` — 수정·삭제 (작성자만)
+
+수정 요청은 4.1 에서 `toHandle` 만 뺀 형태입니다(받는 사람은 바꿀 수 없음).
+
+- 수정: **200** / **403**(작성자 아님) / **404**
+- 삭제: **204** / **403** / **404**
+
+### 4.5 공개 범위와 스포일러 마커
+
+| 공개 범위 | 볼 수 있는 사람 |
+| --- | --- |
+| `PUBLIC` | 누구나 (비로그인 포함) |
+| `FOLLOWERS` | 작성자를 팔로우한 사람 + 작성자 + 받은 사람 |
+| `PRIVATE` | 작성자와 받은 사람만 |
+
+| 마커 | 쓰는 곳 | 화면 동작 |
+| --- | --- | --- |
+| `\|\|문장\|\|` | 문장 안 | 그 문장만 흐리게 가리고, 누르면 보인다 |
+| `:::spoiler` | 단독 줄 | 그 지점 이후를 접고, "스포일러 펼치기"로 연다 |
+
+## 5. `GET /api/hello`
 
 서버 연결 확인용 인사 메시지를 반환합니다.
 
@@ -282,7 +389,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 | `message`   | string | 서버 고정 인사 메시지    |
 | `timestamp` | string | 응답 생성 시각(ISO-8601) |
 
-## 5. `GET /api/hello/{name}`
+## 6. `GET /api/hello/{name}`
 
 경로 변수로 받은 이름이 포함된 인사 메시지를 반환합니다.
 
@@ -298,7 +405,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > 경로 변수는 URL 인코딩이 필요합니다. 프론트엔드의 `fetchHelloTo` 는 `encodeURIComponent` 를 사용합니다.
 
-## 6. `POST /api/hello/echo`
+## 7. `POST /api/hello/echo`
 
 전달받은 값을 검증한 뒤, 앞뒤 공백을 제거한 메시지와 길이를 돌려줍니다.
 
@@ -336,7 +443,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > `errors` 는 **위반한 제약 조건 단위**로 쌓입니다. 예를 들어 `message` 가 빈 문자열이면 `@NotBlank` 와 `@Size(min = 2)` 가 모두 위반되어 같은 필드가 2건 들어갑니다.
 
-## 7. `GET /actuator/health`
+## 8. `GET /actuator/health`
 
 ```json
 { "status": "UP" }
@@ -344,7 +451,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 - 노출 엔드포인트는 `application.properties` 의 `management.endpoints.web.exposure.include=health,info` 로 제한되어 있습니다.
 
-## 8. 호출 예시
+## 9. 호출 예시
 
 ```powershell
 # curl.exe 기준
@@ -366,7 +473,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/hello/echo `
 
 > 한글 본문을 PowerShell 로 보낼 때는 인코딩 문제가 생길 수 있으므로 `curl.exe` 사용을 권장합니다.
 
-## 9. 상태 코드 정리
+## 10. 상태 코드 정리
 
 | 상황                     | 상태 코드 | 응답                    |
 | ------------------------ | --------- | ----------------------- |

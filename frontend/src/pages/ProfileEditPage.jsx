@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { updateMyProfile, uploadMyAvatar } from '@/api/users.js'
@@ -17,6 +17,17 @@ function ProfileEditPage() {
   const [message, setMessage] = useState(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+
+  // 선택한 파일을 브라우저가 임시로 만들어 준 주소(미리보기용)
+  const [preview, setPreview] = useState(null)
+
+  // 미리보기 주소가 바뀌면 이전 주소를 해제한다. (메모리 누수 방지)
+  useEffect(() => {
+    if (!preview) {
+      return undefined
+    }
+    return () => URL.revokeObjectURL(preview)
+  }, [preview])
 
   /** 서버가 준 필드별 오류를 상태에 담는다. (입력칸 아래에 표시) */
   const showErrors = (apiError) => {
@@ -56,6 +67,8 @@ function ProfileEditPage() {
     setFieldErrors({})
     setMessage(null)
     setUploading(true)
+    // 고른 사진을 바로 보여 준다(업로드가 끝나면 서버 주소로 바뀐다)
+    setPreview(URL.createObjectURL(file))
 
     try {
       applyProfile(await uploadMyAvatar(file))
@@ -64,6 +77,7 @@ function ProfileEditPage() {
       showErrors(apiError)
     } finally {
       setUploading(false)
+      setPreview(null)
       // 같은 파일을 다시 선택할 수 있도록 input 을 비운다.
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -79,7 +93,7 @@ function ProfileEditPage() {
       <div className="card">
         <h2 className="card__title">프로필 이미지</h2>
         <div className="profile__head">
-          <Avatar size="large" user={user} />
+          <Avatar size="large" user={preview ? { ...user, profileImageUrl: preview } : user} />
           <div className="form__row">
             <label className="form__label" htmlFor="avatar">
               이미지 선택 (PNG·JPG·GIF·WEBP, 2MB 이하)

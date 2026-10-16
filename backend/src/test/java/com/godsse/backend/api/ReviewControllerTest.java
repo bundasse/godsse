@@ -224,6 +224,34 @@ class ReviewControllerTest {
 	}
 
 	@Test
+	@DisplayName("팔로우 피드는 내가 팔로우한 사람의 감상만 보여 준다")
+	void followingFeed() throws Exception {
+		MockHttpSession writer = signup("writer");
+		signup("partner");
+		MockHttpSession fan = signup("fan");
+
+		createReview(writer, "partner", LONG_BODY, null, null);
+
+		// 아직 팔로우하지 않았으므로 비어 있다
+		this.mockMvc.perform(get("/api/reviews").param("following", "true").session(fan))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.total").value(0));
+
+		this.mockMvc.perform(post("/api/users/writer/follow").session(fan)).andExpect(status().isNoContent());
+
+		this.mockMvc.perform(get("/api/reviews").param("following", "true").session(fan))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.total").value(1))
+			.andExpect(jsonPath("$.items[0].author.handle").value("writer"));
+	}
+
+	@Test
+	@DisplayName("로그인하지 않고 팔로우 피드를 요청하면 401 을 반환한다")
+	void followingFeedWithoutLogin() throws Exception {
+		this.mockMvc.perform(get("/api/reviews").param("following", "true")).andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	@DisplayName("감상은 작성자만 수정할 수 있다")
 	void updateReview() throws Exception {
 		MockHttpSession writer = signup("writer");

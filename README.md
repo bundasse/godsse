@@ -119,6 +119,11 @@ npm run dev
 | DELETE | `/api/users/{handle}/follow` | 언팔로우 (204)                |
 | GET    | `/api/users/{handle}/followers` | 팔로워 목록               |
 | GET    | `/api/users/{handle}/following` | 팔로잉 목록               |
+| POST   | `/api/reviews`      | 감상 작성 (날짜·룰 필수, 100자 이상)      |
+| GET    | `/api/reviews`      | 감상 목록 (`?author=` `?recipient=`, 없으면 홈 피드) |
+| GET    | `/api/reviews/{id}` | 감상 전문 (공개 범위 밖이면 403)          |
+| PATCH  | `/api/reviews/{id}` | 감상 수정 (작성자만)                      |
+| DELETE | `/api/reviews/{id}` | 감상 삭제 (작성자만, 204)                 |
 
 `POST /api/hello/echo` 요청 예시:
 

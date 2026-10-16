@@ -59,16 +59,22 @@ public class ReviewController {
 
 	/**
 	 * 감상 목록. 로그인하지 않아도 볼 수 있다(공개 범위 안에서).
+	 *
+	 * @param following true 이면 "내가 팔로우한 사람들의 감상"만(로그인 필요)
 	 */
 	@GetMapping
 	public PageResponse<ReviewSummary> list(@LoginUser(required = false) User viewer,
 			@RequestParam(name = "author", required = false) String author,
 			@RequestParam(name = "recipient", required = false) String recipient,
+			@RequestParam(name = "following", defaultValue = "false") boolean following,
 			@RequestParam(name = "page", defaultValue = "0") int page,
 			@RequestParam(name = "size", defaultValue = "20") int size) {
 
 		Pageable pageable = toPageable(page, size);
 
+		if (following) {
+			return PageResponse.of(this.reviewService.feedFollowing(viewer, pageable));
+		}
 		if (author != null && !author.isBlank()) {
 			return PageResponse.of(this.reviewService.written(author.trim(), viewer, pageable));
 		}
