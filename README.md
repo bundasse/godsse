@@ -2,6 +2,8 @@
 
 React(Vite) 프론트엔드 + Java Spring Boot 백엔드로 구성된 풀스택 학습용 프로젝트입니다.
 
+커밋트리거
+
 ## 프로젝트 작업 대원칙 (최우선 · 필독)
 
 > 상세: [doc/00-principles.md](./doc/00-principles.md)
