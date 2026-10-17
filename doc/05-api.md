@@ -371,7 +371,74 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 | `\|\|문장\|\|` | 문장 안 | 그 문장만 흐리게 가리고, 누르면 보인다 |
 | `:::spoiler` | 단독 줄 | 그 지점 이후를 접고, "스포일러 펼치기"로 연다 |
 
-## 5. `GET /api/hello`
+## 5. 세션 일정 (`/api/sessions`)
+
+마이페이지 **달력**에 기록하는 "내가 플레이할(또는 플레이한) 세션" 일정입니다.
+감상과 달리 **나만 보는 계획표**이므로 모든 API 가 로그인을 요구합니다.
+
+### 5.1 `GET /api/sessions?from=&to=` — 기간 내 내 일정
+
+| 파라미터 | 필수 | 설명 |
+| --- | --- | --- |
+| `from` | Y | 시작일 (`YYYY-MM-DD`) |
+| `to` | Y | 종료일 (`YYYY-MM-DD`) — `from` 이후, 최대 62일 |
+
+```json
+[
+  {
+    "id": 1,
+    "title": "정기 캠페인 3화",
+    "plannedDate": "2026-10-20",
+    "ruleName": "크툴루의 부름 7판",
+    "scenarioName": "밤의 미궁",
+    "gm": true,
+    "memo": "모집 중",
+    "status": "PLANNED",
+    "createdAt": "2026-10-15T09:12:00.123Z"
+  }
+]
+```
+
+- **응답 400** — 기간이 잘못되었거나 62일 초과
+- **응답 401** — 미로그인
+
+> 달력은 한 달치를 한 번에 그리므로 페이지네이션 대신 **기간**으로 받습니다.
+
+### 5.2 `POST /api/sessions` — 일정 작성
+
+| 필드 | 타입 | 필수 | 규칙 |
+| --- | --- | --- | --- |
+| `title` | string | Y | 60자 이하 |
+| `plannedDate` | date | Y | 미래·과거 모두 가능 |
+| `ruleName` | string | Y | 50자 이하 |
+| `scenarioName` | string | N | 100자 이하 |
+| `gm` | boolean | N | 생략하면 `false` |
+| `memo` | string | N | 1000자 이하 |
+| `status` | string | N | 생략하면 `PLANNED` |
+
+- **응답 201** — `SessionPlanResponse`
+- **응답 400 / 401**
+
+### 5.3 `PATCH /api/sessions/{id}` — 일정 수정 (소유자만)
+
+5.2 와 같은 필드입니다. `status` 를 보내면 상태도 바뀝니다(예: `PLANNED` → `DONE`).
+`gm`·`status` 를 생략하면 **기존 값을 유지**합니다.
+
+- **응답 200 / 403**(남의 일정) / **404**
+
+### 5.4 `DELETE /api/sessions/{id}` — 일정 삭제 (소유자만)
+
+- **응답 204 / 403 / 404**
+
+### 5.5 상태 값
+
+| 값 | 뜻 |
+| --- | --- |
+| `PLANNED` | 예정 |
+| `DONE` | 완료 |
+| `CANCELED` | 취소 |
+
+## 6. `GET /api/hello`
 
 서버 연결 확인용 인사 메시지를 반환합니다.
 
@@ -389,7 +456,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 | `message`   | string | 서버 고정 인사 메시지    |
 | `timestamp` | string | 응답 생성 시각(ISO-8601) |
 
-## 6. `GET /api/hello/{name}`
+## 7. `GET /api/hello/{name}`
 
 경로 변수로 받은 이름이 포함된 인사 메시지를 반환합니다.
 
@@ -405,7 +472,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > 경로 변수는 URL 인코딩이 필요합니다. 프론트엔드의 `fetchHelloTo` 는 `encodeURIComponent` 를 사용합니다.
 
-## 7. `POST /api/hello/echo`
+## 8. `POST /api/hello/echo`
 
 전달받은 값을 검증한 뒤, 앞뒤 공백을 제거한 메시지와 길이를 돌려줍니다.
 
@@ -443,7 +510,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > `errors` 는 **위반한 제약 조건 단위**로 쌓입니다. 예를 들어 `message` 가 빈 문자열이면 `@NotBlank` 와 `@Size(min = 2)` 가 모두 위반되어 같은 필드가 2건 들어갑니다.
 
-## 8. `GET /actuator/health`
+## 9. `GET /actuator/health`
 
 ```json
 { "status": "UP" }
@@ -451,7 +518,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 - 노출 엔드포인트는 `application.properties` 의 `management.endpoints.web.exposure.include=health,info` 로 제한되어 있습니다.
 
-## 9. 호출 예시
+## 10. 호출 예시
 
 ```powershell
 # curl.exe 기준
@@ -473,7 +540,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/hello/echo `
 
 > 한글 본문을 PowerShell 로 보낼 때는 인코딩 문제가 생길 수 있으므로 `curl.exe` 사용을 권장합니다.
 
-## 10. 상태 코드 정리
+## 11. 상태 코드 정리
 
 | 상황                     | 상태 코드 | 응답                    |
 | ------------------------ | --------- | ----------------------- |

@@ -1,10 +1,15 @@
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 
+import MyCalendar from '@/components/MyCalendar.jsx'
 import ReviewList from '@/components/ReviewList.jsx'
 import { useAuth } from '@/context/auth.js'
 
 function MyPage() {
   const { user, logout } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // ?tab=calendar 이면 달력, 그 외에는 받은 감상
+  const tab = searchParams.get('tab') === 'calendar' ? 'calendar' : 'reviews'
 
   const handleLogout = () => {
     logout()
@@ -43,20 +48,38 @@ function MyPage() {
         </div>
       </div>
 
-      <div className="card">
-        <h2 className="card__title">받은 감상</h2>
-        <ReviewList handle={user.handle} kind="received" />
-        <p className="text--muted">
-          <Link to={`/u/${user.handle}/received`}>받은 감상 전체 보기</Link>
-        </p>
+      <div className="tabs">
+        <button
+          className={tab === 'reviews' ? 'tabs__tab tabs__tab--active' : 'tabs__tab'}
+          type="button"
+          onClick={() => setSearchParams({})}
+        >
+          받은 감상
+        </button>
+        <button
+          className={tab === 'calendar' ? 'tabs__tab tabs__tab--active' : 'tabs__tab'}
+          type="button"
+          onClick={() => setSearchParams({ tab: 'calendar' })}
+        >
+          세션 일정
+        </button>
       </div>
 
-      <div className="card">
-        <h2 className="card__title">세션 일정 달력</h2>
-        <p className="text--muted">
-          앞으로 플레이할 세션을 날짜별로 기록합니다. (다음 단계에서 연결합니다)
-        </p>
-      </div>
+      {tab === 'reviews' ? (
+        <div className="card">
+          <h2 className="card__title">받은 감상</h2>
+          <ReviewList handle={user.handle} kind="received" />
+          <p className="text--muted">
+            <Link to={`/u/${user.handle}/received`}>받은 감상 전체 보기</Link>
+          </p>
+        </div>
+      ) : (
+        <div className="card">
+          <h2 className="card__title">세션 일정 달력</h2>
+          <p className="text--muted">날짜를 눌러 그 날의 일정을 확인하거나 추가하세요.</p>
+          <MyCalendar />
+        </div>
+      )}
     </section>
   )
 }

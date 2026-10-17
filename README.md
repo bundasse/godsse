@@ -124,6 +124,10 @@ npm run dev
 | GET    | `/api/reviews/{id}` | 감상 전문 (공개 범위 밖이면 403)          |
 | PATCH  | `/api/reviews/{id}` | 감상 수정 (작성자만)                      |
 | DELETE | `/api/reviews/{id}` | 감상 삭제 (작성자만, 204)                 |
+| GET    | `/api/sessions?from=&to=` | 세션 일정 목록(달력, 기간 조회)     |
+| POST   | `/api/sessions`     | 세션 일정 작성                            |
+| PATCH  | `/api/sessions/{id}` | 세션 일정 수정(상태 변경 포함)           |
+| DELETE | `/api/sessions/{id}` | 세션 일정 삭제 (204)                      |
 
 `POST /api/hello/echo` 요청 예시:
 

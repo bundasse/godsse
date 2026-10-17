@@ -26,6 +26,7 @@
 | [04-file-upload.md](./04-file-upload.md)       | 파일 업로드                | `FileStorageService`, `WebConfig`, `api/users.js`  |
 | [05-follow-and-queries.md](./05-follow-and-queries.md) | 팔로우와 JPQL 조회 | `FollowService`, `FollowRepository`, `FollowButton` |
 | [06-review-spoiler.md](./06-review-spoiler.md) | 감상 설계와 스포일러 처리 | `ReviewService`, `ReviewPreview`, `SpoilerText` |
+| [07-session-calendar.md](./07-session-calendar.md) | 세션 일정 달력(날짜 다루기) | `SessionPlanService`, `MyCalendar`, `SessionForm` |
 
 > 첫 노트는 JDK 17 설치 후 `.\mvnw.cmd test` 를 실행하는 시점에 만들어질 예정입니다. (아래 예정 주제 참고)
 

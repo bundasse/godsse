@@ -13,6 +13,7 @@ com.godsse.backend
 │  ├─ UserController.java          # 프로필 조회·검색·편집·이미지 업로드
 │  ├─ FollowController.java        # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  ├─ ReviewController.java        # 감상 작성·목록·전문·수정·삭제
+│  ├─ SessionPlanController.java   # 세션 일정(달력) 작성·조회·수정·삭제
 │  ├─ ApiExceptionHandler.java     # @RestControllerAdvice (예외 → JSON)
 │  └─ dto/                         # 요청/응답 스키마 (record)
 │     ├─ HelloResponse.java
@@ -30,12 +31,15 @@ com.godsse.backend
 │     ├─ ReviewUpdateRequest.java
 │     ├─ ReviewResponse.java
 │     ├─ ReviewSummary.java
+│     ├─ SessionPlanRequest.java
+│     ├─ SessionPlanResponse.java
 │     └─ PageResponse.java
 ├─ service/                        # 비즈니스 로직 + 트랜잭션 경계
 │  ├─ AuthService.java             # 회원가입·로그인 (중복 확인, BCrypt)
 │  ├─ UserService.java             # 사용자 조회·검색·프로필 편집
 │  ├─ FollowService.java           # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  ├─ ReviewService.java           # 감상 작성·조회·수정·삭제 + 공개 범위 판단
+│  ├─ SessionPlanService.java      # 세션 일정(달력) + 기간 조회
 │  └─ FileStorageService.java      # 업로드 파일 저장·검증·삭제 (UUID 이름)
 ├─ common/                         # 공통 상수·인증 보조
 │  ├─ SessionKeys.java             # 세션 키 상수
@@ -112,6 +116,8 @@ com.godsse.backend
 | `service/ReviewService` | 감상 작성·조회·수정·삭제, 공개 범위 판단 |
 | `api/ReviewController` | `/api/reviews/**` — 감상 작성·목록·전문·수정·삭제 |
 | `common/ReviewPreview` | 목록용 미리보기(스포일러가 새지 않게 자름) |
+| `service/SessionPlanService` | 세션 일정 작성·수정·삭제, 기간 조회(소유자 확인) |
+| `api/SessionPlanController` | `/api/sessions/**` — 달력 일정 |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -214,6 +220,7 @@ public class HelloController {
 | `api/FollowControllerTest` | 팔로우·언팔로우·목록 검증 9건 |
 | `api/ReviewControllerTest` | 감상 작성·조회·공개범위·수정·삭제 검증 14건 |
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
+| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 검증 7건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 

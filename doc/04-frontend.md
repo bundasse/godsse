@@ -11,7 +11,7 @@
 | `src/App.jsx` | **라우트 표**. 어떤 URL 에 어떤 페이지를 보여 줄지 정의 |
 | `src/layouts/AppLayout.jsx` | 공통 뼈대(헤더 + 본문 + 모바일 하단 탭), `<Outlet />` 자리에 페이지가 들어감 |
 | `src/layouts/AppLayout.css` | 헤더/하단 탭/본문 폭, 반응형 규칙 |
-| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute, Avatar, UserCard, FollowButton, SpoilerText, ReviewCard, ReviewList, ReviewForm, ShareButton) |
+| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute, Avatar, UserCard, FollowButton, SpoilerText, ReviewCard, ReviewList, ReviewForm, ShareButton, MyCalendar, SessionForm) |
 | `src/context/auth.js` | 로그인 상태 컨텍스트 정의 + `useAuth()` 훅 |
 | `src/context/AuthProvider.jsx` | 로그인 상태를 앱에 공급(시작 시 `/api/auth/me` 로 복원) |
 | `src/pages/` | 화면 단위 컴포넌트 (라우트 1개 = 파일 1개) |
@@ -20,6 +20,7 @@
 | `src/api/auth.js` | 회원가입·로그인·로그아웃·내 정보 API 함수 |
 | `src/api/users.js` | 프로필 조회·편집, 이미지 업로드, 유저 검색, 팔로우·팔로워/팔로잉 목록 API 함수 |
 | `src/api/reviews.js` | 감상 작성·조회·목록·수정·삭제 API 함수 |
+| `src/api/sessions.js` | 세션 일정(달력) 기간 조회·작성·수정·삭제 API 함수 |
 | `src/constants/` | 태그·룰·스포일러 마커처럼 화면과 서버가 공유하는 상수 |
 | `src/App.css` | 페이지/카드/폼/버튼 등 공용 클래스 |
 | `src/index.css` | CSS 변수(색상·치수)·기본 리셋·폰트 |
@@ -56,7 +57,8 @@
 | `/reviews/new` | 감상 작성 | 스포일러 도구 + 미리보기 (로그인 필요) |
 | `/reviews/:id` | 감상 전문 | 스포일러 열기 + 수정·삭제(작성자) |
 | `/reviews/:id/edit` | 감상 수정 | 작성자만 (폼은 작성 화면과 공용) |
-| `/me`, `/me/edit` | 마이페이지 / 프로필 편집 | 받은 감상 카드 / 프로필 편집 (로그인 필요) |
+| `/me` | 마이페이지 | 탭(`?tab=calendar`) — 받은 감상 / **세션 일정 달력** (로그인 필요) |
+| `/me/edit` | 프로필 편집 | 닉네임·이미지·자기소개 (로그인 필요) |
 
 - URL 파라미터는 `useParams()`(예: `:handle`), 쿼리 문자열은 `useSearchParams()`(예: `?to=godsse`)로 읽습니다.
 - `NavLink` 는 현재 경로와 같을 때 자동으로 활성 스타일 클래스를 붙여 줍니다.

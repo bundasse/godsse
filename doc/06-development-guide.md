@@ -125,6 +125,7 @@ cd backend
 | 설정을 고쳐도 이전 설정이 계속 적용됨                    | `target/test-classes` 에 이전 리소스가 남아 있음          | `.\mvnw.cmd clean test` 로 정리 후 실행                                    |
 | PowerShell 에서 `curl.exe -d '{...}'` 본문이 깨져 400 (JSON parse error) | PowerShell 이 따옴표를 벗겨 전달함 | 본문을 UTF-8 파일로 저장하고 `--data-binary "@파일"` 로 보낸다 ([05-api.md](./05-api.md) 2.5 참고) |
 | PowerShell 로 한글 JSON 응답을 파싱하면 `ConvertFrom-Json` 오류 | `Get-Content` 가 UTF-8 을 기본 인코딩(CP949)으로 읽어 한글 바이트가 인용부호를 삼킴 | `Get-Content -Raw -Encoding UTF8` 로 읽는다 |
+| 선택 항목(`gm` 같은 boolean)을 생략해 보내니 400 `요청 본문을 읽을 수 없습니다` | Jackson 이 record 의 **primitive 필드**를 채우지 못함 | 요청 DTO 의 primitive 를 `Boolean`(래퍼)으로 바꾸고 서비스에서 기본값을 정한다 |
 
 
 
@@ -184,6 +185,10 @@ cd backend
 | 2026-10-15 | Phase 1 마감 다듬기 — 감상 수정 화면(`ReviewForm` 공용화 + `/reviews/:id/edit`), 감상 요청 링크 복사 버튼, 프로필 이미지 즉시 미리보기 |
 | 2026-10-15 | `GET /api/reviews?following=true` 추가 — 내가 팔로우한 사람들의 감상(로그인 필요, 미로그인 401). 홈에 "팔로우한 사람들의 감상" 섹션 |
 | 2026-10-15 | 검증: 백엔드 테스트 **55건 통과**, 프론트 빌드(60 modules), SPA 라우트 200, 팔로우 피드 E2E(미로그인 401 · 팔로우 전 0건 · 팔로우 후 1건) |
+| 2026-10-15 | **Phase 2-1 세션 일정 달력** — `SessionPlanService`·`SessionPlanController`(`GET/POST/PATCH/DELETE /api/sessions`), 기간 조회(최대 62일), 소유자만 수정·삭제, 테스트 7건 |
+| 2026-10-15 | 화면 — `MyCalendar`(월 이동·날짜 선택·일정 점 표시), `SessionForm`(작성/수정 공용·상태 변경), 마이페이지 탭(받은 감상 / 세션 일정) |
+| 2026-10-15 | 수정: record 의 primitive 필드(`boolean gm`)가 생략된 JSON 에서 400 → `Boolean`(래퍼)으로 바꿔 생략 허용(생략 시 `false`/기존 값 유지) |
+| 2026-10-15 | 검증: 백엔드 테스트 **62건 통과**, 프론트 빌드(63 modules), SPA `/me?tab=calendar` 200, 달력 E2E(201 · 기간 1건 · DONE · 204 · 401 · 400) |
 
 
 

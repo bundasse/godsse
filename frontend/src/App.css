@@ -456,3 +456,121 @@
 .form__textarea--tall {
   min-height: 220px;
 }
+
+/* 세션 일정 달력 ------------------------------------------------------------ */
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar__title {
+  margin-right: auto;
+  font-size: 16px;
+}
+
+.calendar__grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar__grid th {
+  padding: 6px 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendar__cell {
+  padding: 2px;
+  vertical-align: top;
+}
+
+.calendar__day {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 52px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar__day--selected {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.calendar__day--today .calendar__day-number {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.calendar__day-number {
+  font-size: 12px;
+}
+
+.calendar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+}
+
+.calendar__more {
+  color: var(--color-muted);
+  font-size: 10px;
+}
+
+.calendar__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calendar__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.calendar__panel-head .button {
+  margin-top: 0;
+}
+
+.calendar__plan-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge--done {
+  background-color: #e7f7ee;
+  color: #15803d;
+}
+
+.badge--canceled {
+  background-color: #f3f4f6;
+  color: var(--color-muted);
+}
+
+.form__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
