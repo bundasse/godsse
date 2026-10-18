@@ -121,3 +121,4 @@ function buildWeeks(year, month) {
 - API 명세(세션 일정) → [../05-api.md](../05-api.md)
 - 도메인 모델(`session_plans`) → [../07-domain-model.md](../07-domain-model.md)
 - 계층 구조와 트랜잭션 → [02-spring-layers.md](./02-spring-layers.md)
+** 여기까지 읽음 **
