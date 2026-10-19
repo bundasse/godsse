@@ -28,6 +28,9 @@ function ReviewCard({ review }) {
         <span>{review.ruleName}</span>
         {review.scenarioName && <span>{review.scenarioName}</span>}
         {review.spoilerMode !== 'NONE' && <span className="badge">스포일러 포함</span>}
+        <span>
+          {review.liked ? '♥' : '♡'} {review.likeCount}
+        </span>
       </div>
 
       <div className="review-card__body">

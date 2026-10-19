@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router'
 
 import { deleteReview, fetchReview } from '@/api/reviews.js'
 import Avatar from '@/components/Avatar.jsx'
+import LikeButton from '@/components/LikeButton.jsx'
+import ReviewReplies from '@/components/ReviewReplies.jsx'
 import SpoilerText from '@/components/SpoilerText.jsx'
 import { VISIBILITIES } from '@/constants/spoilerMarkers.js'
 import { REVIEW_TAG_LABELS } from '@/constants/tags.js'
@@ -13,24 +15,32 @@ function ReviewDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  // 어떤 감상의 결과인지 함께 담아 둔다. id 가 바뀌면 자동으로 "아직 안 불러옴" 상태가 된다.
-  const [result, setResult] = useState({ id: null, review: null, error: null })
+  // 좋아요·답장 뒤에 감상을 다시 불러오기 위한 카운터
+  const [reloadCount, setReloadCount] = useState(0)
+  const requestKey = `${id}#${reloadCount}`
+
+  // 어떤 요청의 결과인지 함께 담아 둔다. 조건이 바뀌면 자동으로 "아직 안 불러옴" 상태가 된다.
+  const [result, setResult] = useState({ key: null, review: null, error: null })
 
   useEffect(() => {
     let ignore = false
 
     fetchReview(id)
       .then((review) => {
-        if (!ignore) setResult({ id, review, error: null })
+        if (!ignore) setResult({ key: requestKey, review, error: null })
       })
       .catch((apiError) => {
-        if (!ignore) setResult({ id, review: null, error: apiError.message })
+        if (!ignore) setResult({ key: requestKey, review: null, error: apiError.message })
       })
 
     return () => {
       ignore = true
     }
-  }, [id])
+  }, [id, requestKey])
+
+  const reload = () => {
+    setReloadCount((previous) => previous + 1)
+  }
 
   const handleDelete = async () => {
     if (!window.confirm('이 감상을 삭제할까요? 되돌릴 수 없습니다.')) {
@@ -45,7 +55,7 @@ function ReviewDetailPage() {
     }
   }
 
-  if (result.id !== id) {
+  if (result.key !== requestKey) {
     return (
       <section className="page">
         <p className="text--muted">감상을 불러오는 중...</p>
@@ -102,6 +112,13 @@ function ReviewDetailPage() {
           </div>
         )}
 
+        <LikeButton
+          likeCount={review.likeCount}
+          liked={review.liked}
+          reviewId={review.id}
+          onChanged={reload}
+        />
+
         {review.editable && (
           <div className="form__actions">
             <Link className="button" to={`/reviews/${review.id}/edit`}>
@@ -113,6 +130,10 @@ function ReviewDetailPage() {
           </div>
         )}
       </article>
+
+      <section className="card">
+        <ReviewReplies onChanged={reload} reviewId={review.id} />
+      </section>
 
       <p className="text--muted">
         <Link to={`/u/${review.recipient.handle}/received`}>이 사람이 받은 감상 전체 보기</Link>

@@ -1,5 +1,7 @@
 package com.godsse.backend.api;
 
+import java.util.List;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.godsse.backend.api.dto.PageResponse;
 import com.godsse.backend.api.dto.ReviewCreateRequest;
+import com.godsse.backend.api.dto.ReviewReplyRequest;
+import com.godsse.backend.api.dto.ReviewReplyResponse;
 import com.godsse.backend.api.dto.ReviewResponse;
 import com.godsse.backend.api.dto.ReviewSummary;
 import com.godsse.backend.api.dto.ReviewUpdateRequest;
@@ -81,7 +85,7 @@ public class ReviewController {
 		if (recipient != null && !recipient.isBlank()) {
 			return PageResponse.of(this.reviewService.received(recipient.trim(), viewer, pageable));
 		}
-		return PageResponse.of(this.reviewService.feed(pageable));
+		return PageResponse.of(this.reviewService.feed(viewer, pageable));
 	}
 
 	/**
@@ -108,6 +112,51 @@ public class ReviewController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@LoginUser User user, @PathVariable Long id) {
 		this.reviewService.delete(user, id);
+	}
+
+	/**
+	 * 좋아요(하트). 성공하면 204, 이미 눌렀으면 409, 감상을 볼 수 없으면 403.
+	 */
+	@PostMapping("/{id}/like")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void like(@LoginUser User user, @PathVariable Long id) {
+		this.reviewService.like(user, id);
+	}
+
+	/**
+	 * 좋아요 취소. 성공하면 204, 누르지 않았으면 404.
+	 */
+	@DeleteMapping("/{id}/like")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void unlike(@LoginUser User user, @PathVariable Long id) {
+		this.reviewService.unlike(user, id);
+	}
+
+	/**
+	 * 답장 목록(오래된 순). 감상을 볼 수 없으면 403.
+	 */
+	@GetMapping("/{id}/replies")
+	public List<ReviewReplyResponse> replies(@LoginUser(required = false) User viewer, @PathVariable Long id) {
+		return this.reviewService.replies(id, viewer);
+	}
+
+	/**
+	 * 답장 작성. 성공하면 201.
+	 */
+	@PostMapping("/{id}/replies")
+	@ResponseStatus(HttpStatus.CREATED)
+	public ReviewReplyResponse addReply(@LoginUser User user, @PathVariable Long id,
+			@Valid @RequestBody ReviewReplyRequest request) {
+		return this.reviewService.addReply(user, id, request);
+	}
+
+	/**
+	 * 답장 삭제. 답장 작성자만 가능하다(아니면 403). 성공하면 204.
+	 */
+	@DeleteMapping("/{id}/replies/{replyId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteReply(@LoginUser User user, @PathVariable Long id, @PathVariable Long replyId) {
+		this.reviewService.deleteReply(user, id, replyId);
 	}
 
 	/** 정렬은 저장소 쿼리 안에 있으므로 여기서는 페이지 정보만 만든다. */

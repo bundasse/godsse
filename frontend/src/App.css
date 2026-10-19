@@ -574,3 +574,86 @@
   gap: 8px;
   font-size: 14px;
 }
+
+/* 좋아요(하트) -------------------------------------------------------------- */
+
+.like {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.like__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.like__button--on {
+  border-color: #f43f5e;
+  background-color: #fff1f2;
+  color: #f43f5e;
+}
+
+.like__heart {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.like__count {
+  font-size: 13px;
+}
+
+.like .text--error {
+  margin: 0;
+}
+
+/* 답장 ---------------------------------------------------------------------- */
+
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reply {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.reply__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reply__head {
+  margin: 0;
+  font-size: 13px;
+}
+
+.reply__text {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.link-button {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}

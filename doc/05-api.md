@@ -298,7 +298,10 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
   "tags": ["RP", "HORROR"],
   "createdAt": "2026-10-14T12:49:26.433822Z",
   "updatedAt": "2026-10-14T12:49:26.433822Z",
-  "editable": true
+  "editable": true,
+  "likeCount": 2,
+  "liked": false,
+  "replyCount": 1
 }
 ```
 
@@ -331,7 +334,9 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
       "bodyPreview": "오늘 정말 즐거웠습니다. …",
       "spoilerMode": "NONE",
       "tags": ["RP"],
-      "createdAt": "2026-10-14T12:49:26.433823Z"
+      "createdAt": "2026-10-14T12:49:26.433823Z",
+      "likeCount": 2,
+      "liked": false
     }
   ],
   "page": 0,
@@ -347,7 +352,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 ### 4.3 `GET /api/reviews/{id}` — 감상 전문
 
-- **응답 200** — `ReviewResponse` (`editable` 로 수정·삭제 가능 여부를 알려 준다)
+- **응답 200** — `ReviewResponse` (수정·삭제 가능 여부 `editable`, 좋아요 `likeCount`·`liked`, 답장 수 `replyCount`)
 - **응답 403** — 공개 범위 밖
 - **응답 404** — 없는 감상
 
@@ -358,7 +363,42 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 - 수정: **200** / **403**(작성자 아님) / **404**
 - 삭제: **204** / **403** / **404**
 
-### 4.5 공개 범위와 스포일러 마커
+### 4.5 `POST`·`DELETE /api/reviews/{id}/like` — 좋아요 (로그인 필요)
+
+| 요청 | 응답 |
+| --- | --- |
+| `POST /api/reviews/{id}/like` | **204** (이미 눌렀으면 **409**) |
+| `DELETE /api/reviews/{id}/like` | **204** (누르지 않았으면 **404**) |
+
+- 감상을 **볼 수 없으면 403**, 미로그인이면 **401**
+- 좋아요 수·내 좋아요 여부는 감상 응답의 `likeCount`·`liked` 로 내려간다
+
+### 4.6 `GET`·`POST /api/reviews/{id}/replies` · `DELETE .../replies/{replyId}` — 답장
+
+답장은 **한 단계**만 둡니다(답장에 다시 답장하는 구조는 없음).
+
+| 요청 | 응답 |
+| --- | --- |
+| `GET /api/reviews/{id}/replies` | **200** — `ReviewReplyResponse[]` (오래된 순 = 대화 순서) |
+| `POST /api/reviews/{id}/replies` | **201** — 작성된 답장 (로그인 필요) |
+| `DELETE /api/reviews/{id}/replies/{replyId}` | **204** — 답장 작성자만 (아니면 **403**) |
+
+- 요청 본문: `{ "body": "..." }` — **1~500자**
+- 감상을 볼 수 없으면 조회·작성 모두 **403**
+
+```json
+[
+  {
+    "id": 3,
+    "author": { "handle": "partner", "nickname": "파트너", "profileImageUrl": null },
+    "body": "저도 정말 즐거웠어요!",
+    "createdAt": "2026-10-15T10:20:00.000Z",
+    "editable": false
+  }
+]
+```
+
+### 4.7 공개 범위와 스포일러 마커
 
 | 공개 범위 | 볼 수 있는 사람 |
 | --- | --- |

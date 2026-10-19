@@ -27,16 +27,20 @@ import com.godsse.backend.domain.enums.Visibility;
  * @param createdAt    작성 시각
  * @param updatedAt    수정 시각
  * @param editable     조회자가 이 감상을 수정·삭제할 수 있는지(작성자 본인 여부)
+ * @param likeCount    좋아요 수
+ * @param liked        조회자가 좋아요했는지
+ * @param replyCount   답장 수
  */
 public record ReviewResponse(Long id, UserSummary author, UserSummary recipient, LocalDate playedOn, String ruleName,
 		String scenarioName, String body, SpoilerMode spoilerMode, Visibility visibility, Set<String> tags,
-		Instant createdAt, Instant updatedAt, boolean editable) {
+		Instant createdAt, Instant updatedAt, boolean editable, long likeCount, boolean liked, long replyCount) {
 
-	public static ReviewResponse of(Review review, boolean editable) {
+	public static ReviewResponse of(Review review, boolean editable, long likeCount, boolean liked, long replyCount) {
 		return new ReviewResponse(review.getId(), UserSummary.of(review.getAuthor()),
 				UserSummary.of(review.getRecipient()), review.getPlayedOn(), review.getRuleName(),
 				review.getScenarioName(), review.getBody(), review.getSpoilerMode(), review.getVisibility(),
-				review.getTags(), review.getCreatedAt(), review.getUpdatedAt(), editable);
+				review.getTags(), review.getCreatedAt(), review.getUpdatedAt(), editable, likeCount, liked,
+				replyCount);
 	}
 
 }

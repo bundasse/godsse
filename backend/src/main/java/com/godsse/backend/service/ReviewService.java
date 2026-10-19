@@ -1,6 +1,7 @@
 package com.godsse.backend.service;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.domain.Page;
@@ -9,18 +10,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.godsse.backend.api.dto.ReviewCreateRequest;
+import com.godsse.backend.api.dto.ReviewReplyRequest;
+import com.godsse.backend.api.dto.ReviewReplyResponse;
 import com.godsse.backend.api.dto.ReviewResponse;
 import com.godsse.backend.api.dto.ReviewSummary;
 import com.godsse.backend.api.dto.ReviewUpdateRequest;
 import com.godsse.backend.common.exception.BadRequestException;
+import com.godsse.backend.common.exception.ConflictException;
 import com.godsse.backend.common.exception.ForbiddenException;
 import com.godsse.backend.common.exception.NotFoundException;
 import com.godsse.backend.common.exception.UnauthorizedException;
 import com.godsse.backend.domain.Review;
+import com.godsse.backend.domain.ReviewLike;
+import com.godsse.backend.domain.ReviewReply;
 import com.godsse.backend.domain.User;
 import com.godsse.backend.domain.enums.SpoilerMode;
 import com.godsse.backend.domain.enums.Visibility;
 import com.godsse.backend.repository.FollowRepository;
+import com.godsse.backend.repository.ReviewLikeRepository;
+import com.godsse.backend.repository.ReviewReplyRepository;
 import com.godsse.backend.repository.ReviewRepository;
 import com.godsse.backend.repository.UserRepository;
 
@@ -45,12 +53,17 @@ public class ReviewService {
 	private final ReviewRepository reviewRepository;
 	private final UserRepository userRepository;
 	private final FollowRepository followRepository;
+	private final ReviewLikeRepository reviewLikeRepository;
+	private final ReviewReplyRepository reviewReplyRepository;
 
 	public ReviewService(ReviewRepository reviewRepository, UserRepository userRepository,
-			FollowRepository followRepository) {
+			FollowRepository followRepository, ReviewLikeRepository reviewLikeRepository,
+			ReviewReplyRepository reviewReplyRepository) {
 		this.reviewRepository = reviewRepository;
 		this.userRepository = userRepository;
 		this.followRepository = followRepository;
+		this.reviewLikeRepository = reviewLikeRepository;
+		this.reviewReplyRepository = reviewReplyRepository;
 	}
 
 	/**
@@ -72,7 +85,7 @@ public class ReviewService {
 				trimToNull(request.scenarioName()), request.body(), orDefault(request.spoilerMode(), SpoilerMode.NONE),
 				orDefault(request.visibility(), Visibility.PUBLIC), cleanTags(request.tags()));
 
-		return ReviewResponse.of(this.reviewRepository.save(review), true);
+		return ReviewResponse.of(this.reviewRepository.save(review), true, 0, false, 0);
 	}
 
 	/**
@@ -85,7 +98,7 @@ public class ReviewService {
 			throw new ForbiddenException("이 감상을 볼 수 없습니다.");
 		}
 
-		return ReviewResponse.of(review, isAuthor(review, viewer));
+		return toResponse(review, isAuthor(review, viewer), viewer);
 	}
 
 	/**
@@ -100,7 +113,7 @@ public class ReviewService {
 				orDefault(request.spoilerMode(), SpoilerMode.NONE),
 				orDefault(request.visibility(), Visibility.PUBLIC), cleanTags(request.tags()));
 
-		return ReviewResponse.of(review, true);
+		return toResponse(review, true, loginUser);
 	}
 
 	/**
@@ -118,25 +131,28 @@ public class ReviewService {
 	public Page<ReviewSummary> received(String handle, User viewer, Pageable pageable) {
 		User user = getUserByHandle(handle);
 
-		return this.reviewRepository
-			.findReceivedVisibleTo(user.getId(), viewerId(viewer), Visibility.PUBLIC, Visibility.FOLLOWERS, pageable)
-			.map(ReviewSummary::of);
+		Page<Review> page = this.reviewRepository.findReceivedVisibleTo(user.getId(), viewerId(viewer),
+				Visibility.PUBLIC, Visibility.FOLLOWERS, pageable);
+
+		return toSummaryPage(page, viewer);
 	}
 
 	/** 이 사람이 쓴 감상 중 조회자가 볼 수 있는 것. */
 	public Page<ReviewSummary> written(String handle, User viewer, Pageable pageable) {
 		User user = getUserByHandle(handle);
 
-		return this.reviewRepository
-			.findWrittenVisibleTo(user.getId(), viewerId(viewer), Visibility.PUBLIC, Visibility.FOLLOWERS, pageable)
-			.map(ReviewSummary::of);
+		Page<Review> page = this.reviewRepository.findWrittenVisibleTo(user.getId(), viewerId(viewer),
+				Visibility.PUBLIC, Visibility.FOLLOWERS, pageable);
+
+		return toSummaryPage(page, viewer);
 	}
 
 	/** 홈 피드 — 전체 공개 감상만. */
-	public Page<ReviewSummary> feed(Pageable pageable) {
-		return this.reviewRepository
-			.findByVisibilityOrderByPlayedOnDescCreatedAtDesc(Visibility.PUBLIC, pageable)
-			.map(ReviewSummary::of);
+	public Page<ReviewSummary> feed(User viewer, Pageable pageable) {
+		Page<Review> page = this.reviewRepository
+			.findByVisibilityOrderByPlayedOnDescCreatedAtDesc(Visibility.PUBLIC, pageable);
+
+		return toSummaryPage(page, viewer);
 	}
 
 	/**
@@ -149,9 +165,127 @@ public class ReviewService {
 			throw new UnauthorizedException("팔로우 피드는 로그인이 필요합니다.");
 		}
 
-		return this.reviewRepository
-			.findFeedVisibleTo(viewer.getId(), Visibility.PUBLIC, Visibility.FOLLOWERS, pageable)
-			.map(ReviewSummary::of);
+		Page<Review> page = this.reviewRepository.findFeedVisibleTo(viewer.getId(), Visibility.PUBLIC,
+				Visibility.FOLLOWERS, pageable);
+
+		return toSummaryPage(page, viewer);
+	}
+
+	/**
+	 * 좋아요를 누른다.
+	 *
+	 * @throws ForbiddenException 이 감상을 볼 수 없을 때 (403)
+	 * @throws ConflictException  이미 좋아요했을 때 (409)
+	 */
+	@Transactional
+	public void like(User loginUser, Long reviewId) {
+		Review review = getReview(reviewId);
+		requireVisible(review, loginUser);
+
+		if (this.reviewLikeRepository.existsByReviewIdAndUserId(reviewId, loginUser.getId())) {
+			throw new ConflictException("이미 좋아요한 감상입니다.");
+		}
+
+		this.reviewLikeRepository.save(new ReviewLike(review, getUserById(loginUser.getId())));
+	}
+
+	/**
+	 * 좋아요를 취소한다.
+	 *
+	 * @throws NotFoundException 좋아요하지 않았을 때 (404)
+	 */
+	@Transactional
+	public void unlike(User loginUser, Long reviewId) {
+		Review review = getReview(reviewId);
+		requireVisible(review, loginUser);
+
+		ReviewLike like = this.reviewLikeRepository.findByReviewIdAndUserId(reviewId, loginUser.getId())
+			.orElseThrow(() -> new NotFoundException("좋아요하지 않은 감상입니다."));
+
+		this.reviewLikeRepository.delete(like);
+	}
+
+	/** 답장 목록(오래된 순 = 대화 순서). 볼 수 없는 감상이면 403. */
+	public List<ReviewReplyResponse> replies(Long reviewId, User viewer) {
+		Review review = getReview(reviewId);
+		requireVisible(review, viewer);
+
+		return this.reviewReplyRepository.findByReviewIdOrderByCreatedAtAsc(reviewId)
+			.stream()
+			.map(reply -> ReviewReplyResponse.of(reply, isReplyAuthor(reply, viewer)))
+			.toList();
+	}
+
+	/** 답장을 남긴다. 감상을 볼 수 있어야 한다. */
+	@Transactional
+	public ReviewReplyResponse addReply(User loginUser, Long reviewId, ReviewReplyRequest request) {
+		Review review = getReview(reviewId);
+		requireVisible(review, loginUser);
+
+		ReviewReply reply = this.reviewReplyRepository
+			.save(new ReviewReply(review, getUserById(loginUser.getId()), request.body().trim()));
+
+		return ReviewReplyResponse.of(reply, true);
+	}
+
+	/** 답장을 삭제한다. 답장 작성자만 가능하다. */
+	@Transactional
+	public void deleteReply(User loginUser, Long reviewId, Long replyId) {
+		ReviewReply reply = this.reviewReplyRepository.findById(replyId)
+			.orElseThrow(() -> new NotFoundException("답장을 찾을 수 없습니다."));
+
+		if (!reply.getReview().getId().equals(reviewId)) {
+			throw new NotFoundException("답장을 찾을 수 없습니다.");
+		}
+		if (!isReplyAuthor(reply, loginUser)) {
+			throw new ForbiddenException("내 답장만 삭제할 수 있습니다.");
+		}
+
+		this.reviewReplyRepository.delete(reply);
+	}
+
+	/** 볼 수 없는 감상이면 403. */
+	private void requireVisible(Review review, User viewer) {
+		if (!canView(review, viewer)) {
+			throw new ForbiddenException("이 감상을 볼 수 없습니다.");
+		}
+	}
+
+	private static boolean isReplyAuthor(ReviewReply reply, User user) {
+		return user != null && reply.getAuthor().getId().equals(user.getId());
+	}
+
+	/**
+	 * 목록을 요약 DTO 로 바꾸면서 좋아요 수·내 좋아요 여부를 붙인다.
+	 *
+	 * <p>
+	 * "내가 좋아요한 감상 id" 는 페이지에 담긴 id 들을 한 번에 넘겨 1회로 가져온다(N+1 방지).
+	 * 좋아요 수는 항목마다 세는데(20건이면 20회), 지금 규모에서는 단순함을 택했다.
+	 * 목록이 커지면 group by 조회로 한 번에 가져오도록 바꾼다.
+	 */
+	private Page<ReviewSummary> toSummaryPage(Page<Review> page, User viewer) {
+		Set<Long> likedIds = likedReviewIds(page.getContent(), viewer);
+
+		return page.map(review -> ReviewSummary.of(review,
+				this.reviewLikeRepository.countByReviewId(review.getId()), likedIds.contains(review.getId())));
+	}
+
+	private Set<Long> likedReviewIds(List<Review> reviews, User viewer) {
+		if (viewer == null || reviews.isEmpty()) {
+			return Set.of();
+		}
+
+		List<Long> reviewIds = reviews.stream().map(Review::getId).toList();
+		return new LinkedHashSet<>(this.reviewLikeRepository.findLikedReviewIds(viewer.getId(), reviewIds));
+	}
+
+	/** 단건 응답(좋아요 수·여부·답장 수 포함). */
+	private ReviewResponse toResponse(Review review, boolean editable, User viewer) {
+		boolean liked = viewer != null
+				&& this.reviewLikeRepository.existsByReviewIdAndUserId(review.getId(), viewer.getId());
+
+		return ReviewResponse.of(review, editable, this.reviewLikeRepository.countByReviewId(review.getId()), liked,
+				this.reviewReplyRepository.countByReviewId(review.getId()));
 	}
 
 	/**

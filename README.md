@@ -126,6 +126,11 @@ npm run dev
 | GET    | `/api/reviews/{id}` | 감상 전문 (공개 범위 밖이면 403)          |
 | PATCH  | `/api/reviews/{id}` | 감상 수정 (작성자만)                      |
 | DELETE | `/api/reviews/{id}` | 감상 삭제 (작성자만, 204)                 |
+| POST   | `/api/reviews/{id}/like` | 좋아요 (204, 중복 409)               |
+| DELETE | `/api/reviews/{id}/like` | 좋아요 취소 (204, 없으면 404)        |
+| GET    | `/api/reviews/{id}/replies` | 답장 목록                         |
+| POST   | `/api/reviews/{id}/replies` | 답장 작성 (201)                   |
+| DELETE | `/api/reviews/{id}/replies/{replyId}` | 답장 삭제 (204)          |
 | GET    | `/api/sessions?from=&to=` | 세션 일정 목록(달력, 기간 조회)     |
 | POST   | `/api/sessions`     | 세션 일정 작성                            |
 | PATCH  | `/api/sessions/{id}` | 세션 일정 수정(상태 변경 포함)           |

@@ -189,6 +189,10 @@ cd backend
 | 2026-10-15 | 화면 — `MyCalendar`(월 이동·날짜 선택·일정 점 표시), `SessionForm`(작성/수정 공용·상태 변경), 마이페이지 탭(받은 감상 / 세션 일정) |
 | 2026-10-15 | 수정: record 의 primitive 필드(`boolean gm`)가 생략된 JSON 에서 400 → `Boolean`(래퍼)으로 바꿔 생략 허용(생략 시 `false`/기존 값 유지) |
 | 2026-10-15 | 검증: 백엔드 테스트 **62건 통과**, 프론트 빌드(63 modules), SPA `/me?tab=calendar` 200, 달력 E2E(201 · 기간 1건 · DONE · 204 · 401 · 400) |
+| 2026-10-15 | **좋아요·답장** — `review_likes`(리뷰+사용자 유니크)·`review_replies`(한 단계) 테이블, `POST/DELETE /api/reviews/{id}/like`, `GET/POST .../replies`, `DELETE .../replies/{replyId}`, 테스트 8건 |
+| 2026-10-15 | 감상 응답에 `likeCount`·`liked`(목록 카드 포함)·`replyCount` 추가. 목록의 "내 좋아요"는 id 를 한 번에 조회해 N+1 방지 |
+| 2026-10-15 | 프론트 — `LikeButton`(하트 토글), `ReviewReplies`(목록·작성·삭제), 카드에 하트 수 표시 |
+| 2026-10-15 | 검증: 백엔드 테스트 **70건 통과**, 프론트 빌드(65 modules), 좋아요·답장 E2E(204·409·201·403·404·401·0건 복귀) |
 
 
 

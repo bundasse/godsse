@@ -44,3 +44,19 @@ export const updateReview = (id, body) => apiClient.patch(`/api/reviews/${id}`, 
 
 /** 감상 삭제(작성자만 가능, 아니면 403). 성공하면 204. */
 export const deleteReview = (id) => apiClient.delete(`/api/reviews/${id}`)
+
+/** 좋아요(로그인 필요). 이미 눌렀으면 409, 볼 수 없는 감상이면 403. */
+export const likeReview = (id) => apiClient.post(`/api/reviews/${id}/like`)
+
+/** 좋아요 취소. 누르지 않았으면 404. */
+export const unlikeReview = (id) => apiClient.delete(`/api/reviews/${id}/like`)
+
+/** 답장 목록(오래된 순). */
+export const fetchReplies = (id) => apiClient.get(`/api/reviews/${id}/replies`)
+
+/** 답장 작성(로그인 필요, 500자 이하). */
+export const createReply = (id, body) => apiClient.post(`/api/reviews/${id}/replies`, { body })
+
+/** 답장 삭제(답장 작성자만). 성공하면 204. */
+export const deleteReply = (id, replyId) =>
+  apiClient.delete(`/api/reviews/${id}/replies/${replyId}`)

@@ -42,6 +42,8 @@
 | `RuleSystem` | `rule_systems` | 룰 자동완성용 목록 |
 | `SessionPlan` | `session_plans` | 마이페이지 달력의 세션 일정 |
 | (값 목록) | `review_tags` | 리뷰의 감정 태그(`@ElementCollection`) |
+| `ReviewLike` | `review_likes` | 감상 **좋아요** (리뷰 + 사용자 유니크) |
+| `ReviewReply` | `review_replies` | 감상에 달린 **답장** (한 단계) |
 
 ## 3. 테이블 상세
 
@@ -121,6 +123,33 @@
 
 > 리뷰는 FK 가 아니라 `rule_name` 문자열을 저장합니다. 초기에는 자유 입력을 허용하고, 데이터가 쌓이면
 > 정규화(코드 참조)를 검토합니다.
+
+### 3.7 `review_likes` — 좋아요
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | BIGINT | PK | |
+| `review_id` | BIGINT | NOT NULL, FK→reviews | 대상 감상 |
+| `user_id` | BIGINT | NOT NULL, FK→users | 누른 사람 |
+| `created_at` | TIMESTAMP | NOT NULL | |
+
+제약: `uk_review_likes (review_id, user_id)` — 같은 사람이 같은 감상에 두 번 좋아요할 수 없다.
+(서비스에서도 확인해 409 를 주고, DB 제약이 마지막 안전장치)
+
+### 3.8 `review_replies` — 답장
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | BIGINT | PK | |
+| `review_id` | BIGINT | NOT NULL, FK→reviews | 대상 감상 |
+| `author_id` | BIGINT | NOT NULL, FK→users | 쓴 사람 |
+| `body` | VARCHAR(500) | NOT NULL | 답장 내용 |
+| `created_at`, `updated_at` | TIMESTAMP | NOT NULL | |
+
+인덱스: `idx_review_replies_review(review_id)`
+
+> 답장은 **한 단계**만 둡니다(답장에 다시 답장하는 구조 없음). 대화가 길어지면 화면이 복잡해지고,
+> 롤링페이퍼 성격에는 한 단계로 충분합니다.
 
 ## 4. 스포일러 규칙
 

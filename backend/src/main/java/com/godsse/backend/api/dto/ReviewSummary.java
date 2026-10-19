@@ -25,15 +25,18 @@ import com.godsse.backend.domain.enums.SpoilerMode;
  * @param spoilerMode  스포일러 표시 방식
  * @param tags         감정 태그
  * @param createdAt    작성 시각
+ * @param likeCount    좋아요 수
+ * @param liked        조회자가 좋아요했는지
  */
 public record ReviewSummary(Long id, UserSummary author, UserSummary recipient, LocalDate playedOn, String ruleName,
-		String scenarioName, String bodyPreview, SpoilerMode spoilerMode, Set<String> tags, Instant createdAt) {
+		String scenarioName, String bodyPreview, SpoilerMode spoilerMode, Set<String> tags, Instant createdAt,
+		long likeCount, boolean liked) {
 
-	public static ReviewSummary of(Review review) {
+	public static ReviewSummary of(Review review, long likeCount, boolean liked) {
 		return new ReviewSummary(review.getId(), UserSummary.of(review.getAuthor()),
 				UserSummary.of(review.getRecipient()), review.getPlayedOn(), review.getRuleName(),
 				review.getScenarioName(), ReviewPreview.of(review.getBody()), review.getSpoilerMode(),
-				review.getTags(), review.getCreatedAt());
+				review.getTags(), review.getCreatedAt(), likeCount, liked);
 	}
 
 }

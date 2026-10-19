@@ -53,6 +53,8 @@ com.godsse.backend
 │  ├─ User.java                    # users
 │  ├─ Follow.java                  # follows
 │  ├─ Review.java                  # reviews (감상 메시지)
+│  ├─ ReviewLike.java              # review_likes (좋아요)
+│  ├─ ReviewReply.java             # review_replies (답장)
 │  ├─ RuleSystem.java              # rule_systems
 │  ├─ SessionPlan.java             # session_plans (달력)
 │  └─ enums/
@@ -63,6 +65,8 @@ com.godsse.backend
 │  ├─ UserRepository.java
 │  ├─ FollowRepository.java
 │  ├─ ReviewRepository.java
+│  ├─ ReviewLikeRepository.java
+│  ├─ ReviewReplyRepository.java
 │  ├─ RuleSystemRepository.java
 │  └─ SessionPlanRepository.java
 └─ config/
@@ -118,6 +122,8 @@ com.godsse.backend
 | `common/ReviewPreview` | 목록용 미리보기(스포일러가 새지 않게 자름) |
 | `service/SessionPlanService` | 세션 일정 작성·수정·삭제, 기간 조회(소유자 확인) |
 | `api/SessionPlanController` | `/api/sessions/**` — 달력 일정 |
+| `domain/ReviewLike`·`ReviewReply` | 좋아요·답장(리뷰 아래 자식 테이블) |
+| `service/ReviewService`(확장) | 좋아요·답장, 좋아요 수·내 좋아요 여부 매핑 |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -221,6 +227,7 @@ public class HelloController {
 | `api/ReviewControllerTest` | 감상 작성·조회·공개범위·수정·삭제 검증 14건 |
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
 | `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 검증 7건 |
+| `api/ReviewReactionControllerTest` | 좋아요·답장·공개범위 검증 8건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 
