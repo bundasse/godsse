@@ -24,6 +24,7 @@ import com.godsse.backend.domain.Review;
 import com.godsse.backend.domain.ReviewLike;
 import com.godsse.backend.domain.ReviewReply;
 import com.godsse.backend.domain.User;
+import com.godsse.backend.domain.enums.NotificationType;
 import com.godsse.backend.domain.enums.SpoilerMode;
 import com.godsse.backend.domain.enums.Visibility;
 import com.godsse.backend.repository.FollowRepository;
@@ -55,15 +56,17 @@ public class ReviewService {
 	private final FollowRepository followRepository;
 	private final ReviewLikeRepository reviewLikeRepository;
 	private final ReviewReplyRepository reviewReplyRepository;
+	private final NotificationService notificationService;
 
 	public ReviewService(ReviewRepository reviewRepository, UserRepository userRepository,
 			FollowRepository followRepository, ReviewLikeRepository reviewLikeRepository,
-			ReviewReplyRepository reviewReplyRepository) {
+			ReviewReplyRepository reviewReplyRepository, NotificationService notificationService) {
 		this.reviewRepository = reviewRepository;
 		this.userRepository = userRepository;
 		this.followRepository = followRepository;
 		this.reviewLikeRepository = reviewLikeRepository;
 		this.reviewReplyRepository = reviewReplyRepository;
+		this.notificationService = notificationService;
 	}
 
 	/**
@@ -85,7 +88,10 @@ public class ReviewService {
 				trimToNull(request.scenarioName()), request.body(), orDefault(request.spoilerMode(), SpoilerMode.NONE),
 				orDefault(request.visibility(), Visibility.PUBLIC), cleanTags(request.tags()));
 
-		return ReviewResponse.of(this.reviewRepository.save(review), true, 0, false, 0);
+		Review saved = this.reviewRepository.save(review);
+		this.notificationService.notify(recipient, author, NotificationType.REVIEW, saved);
+
+		return ReviewResponse.of(saved, true, 0, false, 0);
 	}
 
 	/**
@@ -186,7 +192,11 @@ public class ReviewService {
 			throw new ConflictException("이미 좋아요한 감상입니다.");
 		}
 
-		this.reviewLikeRepository.save(new ReviewLike(review, getUserById(loginUser.getId())));
+		User liker = getUserById(loginUser.getId());
+		this.reviewLikeRepository.save(new ReviewLike(review, liker));
+
+		// 감상 작성자에게 알린다. 내 감상에 내가 누른 경우는 notify 안에서 걸러진다.
+		this.notificationService.notify(review.getAuthor(), liker, NotificationType.LIKE, review);
 	}
 
 	/**
@@ -203,6 +213,9 @@ public class ReviewService {
 			.orElseThrow(() -> new NotFoundException("좋아요하지 않은 감상입니다."));
 
 		this.reviewLikeRepository.delete(like);
+
+		// 되돌린 행동이므로 알림도 지운다.
+		this.notificationService.removeLike(loginUser, review);
 	}
 
 	/** 답장 목록(오래된 순 = 대화 순서). 볼 수 없는 감상이면 403. */
@@ -222,8 +235,13 @@ public class ReviewService {
 		Review review = getReview(reviewId);
 		requireVisible(review, loginUser);
 
+		User author = getUserById(loginUser.getId());
 		ReviewReply reply = this.reviewReplyRepository
-			.save(new ReviewReply(review, getUserById(loginUser.getId()), request.body().trim()));
+			.save(new ReviewReply(review, author, request.body().trim()));
+
+		// 감상 작성자와 받은 사람 모두에게 알린다. 답장을 쓴 본인은 notify 에서 걸러진다.
+		this.notificationService.notify(review.getAuthor(), author, NotificationType.REPLY, review);
+		this.notificationService.notify(review.getRecipient(), author, NotificationType.REPLY, review);
 
 		return ReviewReplyResponse.of(reply, true);
 	}

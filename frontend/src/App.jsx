@@ -8,6 +8,7 @@ import HomePage from '@/pages/HomePage.jsx'
 import LoginPage from '@/pages/LoginPage.jsx'
 import MyPage from '@/pages/MyPage.jsx'
 import NotFoundPage from '@/pages/NotFoundPage.jsx'
+import NotificationsPage from '@/pages/NotificationsPage.jsx'
 import ProfileEditPage from '@/pages/ProfileEditPage.jsx'
 import ProfilePage from '@/pages/ProfilePage.jsx'
 import ReceivedReviewListPage from '@/pages/ReceivedReviewListPage.jsx'
@@ -72,6 +73,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfileEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

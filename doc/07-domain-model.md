@@ -44,6 +44,7 @@
 | (값 목록) | `review_tags` | 리뷰의 감정 태그(`@ElementCollection`) |
 | `ReviewLike` | `review_likes` | 감상 **좋아요** (리뷰 + 사용자 유니크) |
 | `ReviewReply` | `review_replies` | 감상에 달린 **답장** (한 단계) |
+| `Notification` | `notifications` | 알림 (받는 사람 + 행동한 사람 + 종류) |
 
 ## 3. 테이블 상세
 
@@ -150,6 +151,24 @@
 
 > 답장은 **한 단계**만 둡니다(답장에 다시 답장하는 구조 없음). 대화가 길어지면 화면이 복잡해지고,
 > 롤링페이퍼 성격에는 한 단계로 충분합니다.
+
+### 3.9 `notifications` — 알림
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | BIGINT | PK | |
+| `recipient_id` | BIGINT | NOT NULL, FK→users | 알림을 **받는** 사람 |
+| `actor_id` | BIGINT | NOT NULL, FK→users | 그 일을 **한** 사람 |
+| `type` | VARCHAR(20) | NOT NULL | `REVIEW`·`LIKE`·`REPLY`·`FOLLOW` |
+| `review_id` | BIGINT | FK→reviews | 관련 감상 (`FOLLOW` 는 NULL) |
+| `read_at` | TIMESTAMP | | 읽은 시각. **NULL 이면 안 읽음** |
+| `created_at` | TIMESTAMP | NOT NULL | |
+
+인덱스: `idx_notifications_recipient(recipient_id, created_at)`, `idx_notifications_unread(recipient_id, read_at)`
+
+> 사용자를 **두 번** 참조합니다(받는 사람 / 행동한 사람). "알림 한 줄 = 누가 누구에게 무슨 일"이라는
+> 최소 단위로 두면, 종류가 늘어나도 테이블을 바꾸지 않아도 됩니다.
+> 읽음 여부는 boolean 대신 **`read_at`(시각)** 으로 두어 "언제 읽었는지"까지 남깁니다(NULL 이면 안 읽음).
 
 ## 4. 스포일러 규칙
 

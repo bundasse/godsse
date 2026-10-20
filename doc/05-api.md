@@ -478,7 +478,56 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 | `DONE` | 완료 |
 | `CANCELED` | 취소 |
 
-## 6. `GET /api/hello`
+## 6. 알림 (`/api/notifications`)
+
+알림은 다른 기능의 곁다리로 **서버가 만들어 준다**(감상·좋아요·답장·팔로우). 화면은 조회와 읽음 처리만 한다.
+모든 요청은 **로그인 필요**(미로그인 **401**).
+
+| 요청 | 응답 |
+| --- | --- |
+| `GET /api/notifications` | **200** — 최근 30건(최신순) + 안 읽은 개수 |
+| `GET /api/notifications/unread-count` | **200** — `{ "count": 3 }` (헤더 배지) |
+| `POST /api/notifications/{id}/read` | **204** (없거나 남의 알림이면 **404**) |
+| `POST /api/notifications/read-all` | **204** |
+
+```json
+{
+  "items": [
+    {
+      "id": 12,
+      "type": "REPLY",
+      "actor": { "handle": "partner", "nickname": "파트너", "profileImageUrl": null },
+      "reviewId": 65,
+      "read": false,
+      "createdAt": "2026-10-15T10:20:00.000Z"
+    },
+    {
+      "id": 11,
+      "type": "FOLLOW",
+      "actor": { "handle": "reader", "nickname": "리더", "profileImageUrl": null },
+      "reviewId": null,
+      "read": true,
+      "createdAt": "2026-10-15T09:00:00.000Z"
+    }
+  ],
+  "unreadCount": 1
+}
+```
+
+### 6.1 알림이 생기는 순간
+
+| 종류 | 언제 | 받는 사람 |
+| --- | --- | --- |
+| `REVIEW` | 감상이 작성됐을 때 | **감상을 받은 사람** |
+| `LIKE` | 좋아요를 눌렀을 때 | 감상 작성자 |
+| `REPLY` | 답장이 달렸을 때 | 감상 작성자 **와** 받은 사람 |
+| `FOLLOW` | 팔로우했을 때 | 팔로우 당한 사람 |
+
+- **내 활동은 알림을 만들지 않는다** — 내 감상에 내가 좋아요해도 알림이 생기지 않는다.
+- **되돌린 행동은 알림도 지운다** — 좋아요 취소·언팔로우 시 해당 알림이 사라진다(사실과 다른 알림을 남기지 않는다).
+- `FOLLOW` 알림은 `reviewId` 가 `null` 이고, 화면에서는 상대 프로필로 이동한다.
+
+## 7. `GET /api/hello`
 
 서버 연결 확인용 인사 메시지를 반환합니다.
 
@@ -496,7 +545,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 | `message`   | string | 서버 고정 인사 메시지    |
 | `timestamp` | string | 응답 생성 시각(ISO-8601) |
 
-## 7. `GET /api/hello/{name}`
+## 8. `GET /api/hello/{name}`
 
 경로 변수로 받은 이름이 포함된 인사 메시지를 반환합니다.
 
@@ -512,7 +561,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > 경로 변수는 URL 인코딩이 필요합니다. 프론트엔드의 `fetchHelloTo` 는 `encodeURIComponent` 를 사용합니다.
 
-## 8. `POST /api/hello/echo`
+## 9. `POST /api/hello/echo`
 
 전달받은 값을 검증한 뒤, 앞뒤 공백을 제거한 메시지와 길이를 돌려줍니다.
 
@@ -550,7 +599,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 > `errors` 는 **위반한 제약 조건 단위**로 쌓입니다. 예를 들어 `message` 가 빈 문자열이면 `@NotBlank` 와 `@Size(min = 2)` 가 모두 위반되어 같은 필드가 2건 들어갑니다.
 
-## 9. `GET /actuator/health`
+## 10. `GET /actuator/health`
 
 ```json
 { "status": "UP" }
@@ -558,7 +607,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 - 노출 엔드포인트는 `application.properties` 의 `management.endpoints.web.exposure.include=health,info` 로 제한되어 있습니다.
 
-## 10. 호출 예시
+## 11. 호출 예시
 
 ```powershell
 # curl.exe 기준
@@ -580,7 +629,7 @@ Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/hello/echo `
 
 > 한글 본문을 PowerShell 로 보낼 때는 인코딩 문제가 생길 수 있으므로 `curl.exe` 사용을 권장합니다.
 
-## 11. 상태 코드 정리
+## 12. 상태 코드 정리
 
 | 상황                     | 상태 코드 | 응답                    |
 | ------------------------ | --------- | ----------------------- |

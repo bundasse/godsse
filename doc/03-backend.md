@@ -12,6 +12,7 @@ com.godsse.backend
 │  ├─ AuthController.java          # 회원가입·로그인·로그아웃·내 정보
 │  ├─ UserController.java          # 프로필 조회·검색·편집·이미지 업로드
 │  ├─ FollowController.java        # 팔로우·언팔로우·팔로워/팔로잉 목록
+│  ├─ NotificationController.java   # 알림 목록·안 읽은 개수·읽음 처리
 │  ├─ ReviewController.java        # 감상 작성·목록·전문·수정·삭제
 │  ├─ SessionPlanController.java   # 세션 일정(달력) 작성·조회·수정·삭제
 │  ├─ ApiExceptionHandler.java     # @RestControllerAdvice (예외 → JSON)
@@ -38,6 +39,7 @@ com.godsse.backend
 │  ├─ AuthService.java             # 회원가입·로그인 (중복 확인, BCrypt)
 │  ├─ UserService.java             # 사용자 조회·검색·프로필 편집
 │  ├─ FollowService.java           # 팔로우·언팔로우·팔로워/팔로잉 목록
+│  ├─ NotificationService.java     # 알림 만들기·조회·읽음 처리
 │  ├─ ReviewService.java           # 감상 작성·조회·수정·삭제 + 공개 범위 판단
 │  ├─ SessionPlanService.java      # 세션 일정(달력) + 기간 조회
 │  └─ FileStorageService.java      # 업로드 파일 저장·검증·삭제 (UUID 이름)
@@ -52,6 +54,7 @@ com.godsse.backend
 │  ├─ BaseTimeEntity.java          # 생성/수정 시각 공통 상위 클래스
 │  ├─ User.java                    # users
 │  ├─ Follow.java                  # follows
+│  ├─ Notification.java            # notifications (알림)
 │  ├─ Review.java                  # reviews (감상 메시지)
 │  ├─ ReviewLike.java              # review_likes (좋아요)
 │  ├─ ReviewReply.java             # review_replies (답장)
@@ -65,6 +68,7 @@ com.godsse.backend
 │  ├─ UserRepository.java
 │  ├─ FollowRepository.java
 │  ├─ ReviewRepository.java
+│  ├─ NotificationRepository.java
 │  ├─ ReviewLikeRepository.java
 │  ├─ ReviewReplyRepository.java
 │  ├─ RuleSystemRepository.java
@@ -124,6 +128,9 @@ com.godsse.backend
 | `api/SessionPlanController` | `/api/sessions/**` — 달력 일정 |
 | `domain/ReviewLike`·`ReviewReply` | 좋아요·답장(리뷰 아래 자식 테이블) |
 | `service/ReviewService`(확장) | 좋아요·답장, 좋아요 수·내 좋아요 여부 매핑 |
+| `domain/Notification` | 알림(받는 사람·행동한 사람·종류·관련 감상·읽은 시각) |
+| `service/NotificationService` | 알림 만들기(자기 행동 제외)·목록·읽음 처리 |
+| `api/NotificationController` | `/api/notifications/**` — 목록·안 읽은 개수·읽음 |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -228,6 +235,7 @@ public class HelloController {
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
 | `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 검증 7건 |
 | `api/ReviewReactionControllerTest` | 좋아요·답장·공개범위 검증 8건 |
+| `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 검증 8건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 

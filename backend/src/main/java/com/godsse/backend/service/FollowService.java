@@ -11,6 +11,7 @@ import com.godsse.backend.common.exception.ConflictException;
 import com.godsse.backend.common.exception.NotFoundException;
 import com.godsse.backend.domain.Follow;
 import com.godsse.backend.domain.User;
+import com.godsse.backend.domain.enums.NotificationType;
 import com.godsse.backend.repository.FollowRepository;
 import com.godsse.backend.repository.UserRepository;
 
@@ -27,10 +28,13 @@ public class FollowService {
 
 	private final FollowRepository followRepository;
 	private final UserRepository userRepository;
+	private final NotificationService notificationService;
 
-	public FollowService(FollowRepository followRepository, UserRepository userRepository) {
+	public FollowService(FollowRepository followRepository, UserRepository userRepository,
+			NotificationService notificationService) {
 		this.followRepository = followRepository;
 		this.userRepository = userRepository;
+		this.notificationService = notificationService;
 	}
 
 	/**
@@ -54,6 +58,7 @@ public class FollowService {
 		}
 
 		this.followRepository.save(new Follow(me, target));
+		this.notificationService.notify(target, me, NotificationType.FOLLOW, null);
 	}
 
 	/**
@@ -70,6 +75,9 @@ public class FollowService {
 			.orElseThrow(() -> new NotFoundException("handle", "팔로우하지 않은 사용자입니다."));
 
 		this.followRepository.delete(follow);
+
+		// 언팔로우도 되돌린 행동이므로 알림을 지운다.
+		this.notificationService.removeFollow(loginUser, target);
 	}
 
 	/** 이 사람을 팔로우하는 사람 목록(팔로워). */
