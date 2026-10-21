@@ -135,6 +135,7 @@ npm run dev
 | GET    | `/api/notifications/unread-count` | 안 읽은 개수만            |
 | POST   | `/api/notifications/{id}/read` | 알림 하나 읽음 (204)           |
 | POST   | `/api/notifications/read-all` | 모두 읽음 (204)                |
+| GET    | `/api/notifications/stream` | 실시간 알림 구독 (SSE, `text/event-stream`) |
 | GET    | `/api/sessions?from=&to=` | 세션 일정 목록(달력, 기간 조회)     |
 | POST   | `/api/sessions`     | 세션 일정 작성                            |
 | PATCH  | `/api/sessions/{id}` | 세션 일정 수정(상태 변경 포함)           |

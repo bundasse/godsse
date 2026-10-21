@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.godsse.backend.api.dto.NotificationListResponse;
 import com.godsse.backend.api.dto.NotificationResponse;
@@ -36,9 +37,11 @@ public class NotificationService {
 	private static final int LIST_LIMIT = 30;
 
 	private final NotificationRepository notificationRepository;
+	private final NotificationStream notificationStream;
 
-	public NotificationService(NotificationRepository notificationRepository) {
+	public NotificationService(NotificationRepository notificationRepository, NotificationStream notificationStream) {
 		this.notificationRepository = notificationRepository;
+		this.notificationStream = notificationStream;
 	}
 
 	/**
@@ -59,6 +62,9 @@ public class NotificationService {
 		}
 
 		this.notificationRepository.save(new Notification(recipient, actor, type, review));
+
+		// 열려 있는 화면이 있으면 바로 알려 준다(없으면 DB 에만 남는다).
+		this.notificationStream.publish(recipient.getId(), unreadCountOf(recipient));
 	}
 
 	/** 내 알림 목록(최신순 30건)과 안 읽은 개수. */
@@ -78,6 +84,13 @@ public class NotificationService {
 	}
 
 	/**
+	 * 실시간 구독을 연다. 연결되자마자 현재 개수를 한 번 보내 화면과 서버를 맞춘다.
+	 */
+	public SseEmitter subscribe(User loginUser) {
+		return this.notificationStream.subscribe(loginUser.getId(), unreadCountOf(loginUser));
+	}
+
+	/**
 	 * 알림 하나를 읽음으로 표시한다.
 	 *
 	 * @throws NotFoundException 없거나 남의 알림일 때 (404) — 남의 알림의 존재 여부를 알려 주지 않는다
@@ -89,12 +102,16 @@ public class NotificationService {
 			.orElseThrow(() -> new NotFoundException("알림을 찾을 수 없습니다."));
 
 		notification.markRead();
+
+		// 읽음도 "개수가 바뀐 일"이라 다른 탭/창에 알려 준다.
+		this.notificationStream.publish(loginUser.getId(), unreadCountOf(loginUser));
 	}
 
 	/** 내 알림을 모두 읽음으로 표시한다(한 번의 UPDATE). */
 	@Transactional
 	public void markAllRead(User loginUser) {
 		this.notificationRepository.markAllRead(loginUser.getId(), Instant.now());
+		this.notificationStream.publish(loginUser.getId(), unreadCountOf(loginUser));
 	}
 
 	/** 좋아요 취소 — 그 좋아요 알림을 지운다. */
@@ -102,6 +119,9 @@ public class NotificationService {
 	public void removeLike(User actor, Review review) {
 		this.notificationRepository.deleteByTypeAndReviewIdAndActorId(NotificationType.LIKE, review.getId(),
 				actor.getId());
+
+		User recipient = review.getAuthor();
+		this.notificationStream.publish(recipient.getId(), unreadCountOf(recipient));
 	}
 
 	/** 언팔로우 — 그 팔로우 알림을 지운다. */
@@ -109,6 +129,7 @@ public class NotificationService {
 	public void removeFollow(User actor, User recipient) {
 		this.notificationRepository.deleteByTypeAndRecipientIdAndActorId(NotificationType.FOLLOW, recipient.getId(),
 				actor.getId());
+		this.notificationStream.publish(recipient.getId(), unreadCountOf(recipient));
 	}
 
 	private long unreadCountOf(User loginUser) {

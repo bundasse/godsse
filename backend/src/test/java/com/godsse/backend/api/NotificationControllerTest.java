@@ -1,9 +1,11 @@
 package com.godsse.backend.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.regex.Matcher;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockAsyncContext;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -209,6 +212,50 @@ class NotificationControllerTest {
 		this.mockMvc.perform(get("/api/notifications")).andExpect(status().isUnauthorized());
 		this.mockMvc.perform(get("/api/notifications/unread-count")).andExpect(status().isUnauthorized());
 		this.mockMvc.perform(post("/api/notifications/read-all")).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	@DisplayName("실시간 스트림은 로그인이 필요하고, 연결되면 현재 개수를 보낸다")
+	void streamSendsCountOnConnect() throws Exception {
+		MockHttpSession writer = signup("writer");
+
+		this.mockMvc.perform(get("/api/notifications/stream")).andExpect(status().isUnauthorized());
+
+		MvcResult result = this.mockMvc.perform(get("/api/notifications/stream").session(writer))
+			.andExpect(status().isOk())
+			.andExpect(request().asyncStarted())
+			.andReturn();
+
+		assertThat(result.getResponse().getContentType()).startsWith(MediaType.TEXT_EVENT_STREAM_VALUE);
+		assertThat(result.getResponse().getContentAsString()).contains("event:connected", "\"count\":0");
+
+		closeStream(result);
+	}
+
+	@Test
+	@DisplayName("알림이 생기면 열려 있는 스트림으로 바뀐 개수를 밀어 준다")
+	void streamPushesChangedCount() throws Exception {
+		MockHttpSession writer = signup("writer");
+		MockHttpSession partner = signup("partner");
+
+		MvcResult stream = this.mockMvc.perform(get("/api/notifications/stream").session(partner))
+			.andExpect(status().isOk())
+			.andExpect(request().asyncStarted())
+			.andReturn();
+
+		// 감상이 만들어지면 받은 사람(partner)의 스트림으로 changed 가 나간다
+		createReview(writer, "partner");
+
+		assertThat(stream.getResponse().getContentAsString()).contains("event:changed", "\"count\":1");
+
+		closeStream(stream);
+	}
+
+	/** 열린 스트림을 닫는다(연결이 다른 테스트로 새지 않게). */
+	private static void closeStream(MvcResult result) {
+		if (result.getRequest().isAsyncStarted()) {
+			((MockAsyncContext) result.getRequest().getAsyncContext()).complete();
+		}
 	}
 
 	/** writer 가 partner 에게 감상을 남기고 id 를 돌려준다. */

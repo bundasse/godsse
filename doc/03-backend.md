@@ -130,6 +130,7 @@ com.godsse.backend
 | `service/ReviewService`(확장) | 좋아요·답장, 좋아요 수·내 좋아요 여부 매핑 |
 | `domain/Notification` | 알림(받는 사람·행동한 사람·종류·관련 감상·읽은 시각) |
 | `service/NotificationService` | 알림 만들기(자기 행동 제외)·목록·읽음 처리 |
+| `service/NotificationStream` | 사용자별 SSE 연결 보관·전송(끊긴 연결 정리 포함) |
 | `api/NotificationController` | `/api/notifications/**` — 목록·안 읽은 개수·읽음 |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
@@ -235,7 +236,7 @@ public class HelloController {
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
 | `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 검증 7건 |
 | `api/ReviewReactionControllerTest` | 좋아요·답장·공개범위 검증 8건 |
-| `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 검증 8건 |
+| `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 + **SSE 연결/전송** 검증 10건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 

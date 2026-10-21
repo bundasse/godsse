@@ -197,6 +197,10 @@ cd backend
 | 2026-10-15 | 알림 발생 지점을 기존 서비스에 연결 — 감상→받은 사람, 좋아요→작성자, 답장→작성자·받은 사람, 팔로우→대상. **자기 행동은 알림 없음**, 좋아요 취소·언팔로우는 알림 삭제 |
 | 2026-10-15 | 프론트 — `NotificationBell`(안 읽은 개수 배지, 화면 이동 때마다 갱신), `NotificationsPage`(목록·모두 읽음·누르면 이동하며 읽음), 헤더 연결 |
 | 2026-10-15 | 검증: 백엔드 테스트 **78건 통과**, 프론트 빌드(68 modules), 알림 E2E(201·204·2건·0건 복귀·404·401) |
+| 2026-10-15 | **알림 실시간화(SSE)** — `GET /api/notifications/stream`(`text/event-stream`), 사용자별 `SseEmitter` 보관(`NotificationStream`), `connected`·`changed` 로 안 읽은 개수 push |
+| 2026-10-15 | push 시점: 알림 생성 · 좋아요 취소 · 언팔로우 · 하나/모두 읽음. 30분 타임아웃 후 `EventSource` 자동 재연결, 끊긴 연결은 즉시 목록에서 제거 |
+| 2026-10-15 | 프론트 — `NotificationBell` 이 `EventSource`(withCredentials)로 구독, SSE 가 막힌 환경 대비 화면 이동 시 조회 유지 |
+| 2026-10-15 | 검증: 백엔드 테스트 **80건 통과**, 프론트 빌드(68 modules), SSE E2E(connected 0 → changed 1 → changed 0) |
 
 
 

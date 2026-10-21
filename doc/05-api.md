@@ -487,6 +487,7 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 | --- | --- |
 | `GET /api/notifications` | **200** — 최근 30건(최신순) + 안 읽은 개수 |
 | `GET /api/notifications/unread-count` | **200** — `{ "count": 3 }` (헤더 배지) |
+| `GET /api/notifications/stream` | **200** — 실시간 구독(SSE, `text/event-stream`) |
 | `POST /api/notifications/{id}/read` | **204** (없거나 남의 알림이면 **404**) |
 | `POST /api/notifications/read-all` | **204** |
 
@@ -526,6 +527,28 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 - **내 활동은 알림을 만들지 않는다** — 내 감상에 내가 좋아요해도 알림이 생기지 않는다.
 - **되돌린 행동은 알림도 지운다** — 좋아요 취소·언팔로우 시 해당 알림이 사라진다(사실과 다른 알림을 남기지 않는다).
 - `FOLLOW` 알림은 `reviewId` 가 `null` 이고, 화면에서는 상대 프로필로 이동한다.
+
+### 6.2 실시간 구독(SSE)
+
+```text
+GET /api/notifications/stream
+
+event:connected
+data:{"count":0}
+
+event:changed
+data:{"count":1}
+```
+
+| 이벤트 | 언제 | 데이터 |
+| --- | --- | --- |
+| `connected` | 연결 직후 1회 | `{"count": 현재 안 읽은 개수}` |
+| `changed` | 개수가 바뀔 때(알림 생성·삭제·읽음) | `{"count": 새 개수}` |
+
+- 서버는 **30분**마다 연결을 끊고, 브라우저의 `EventSource` 가 **자동으로 다시 연결**한다.
+- 끊긴 연결은 서버가 목록에서 지운다(정상 종료·시간 초과·오류).
+- 이 이벤트로 배지 숫자만 갱신하고, 알림 **목록**은 `GET /api/notifications` 로 받는다.
+  (실시간 스트림은 "바뀌었다"는 신호이고, 내용의 원본은 DB 다)
 
 ## 7. `GET /api/hello`
 
