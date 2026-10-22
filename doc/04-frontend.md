@@ -20,9 +20,10 @@
 | `src/api/auth.js` | 회원가입·로그인·로그아웃·내 정보 API 함수 |
 | `src/api/users.js` | 프로필 조회·편집, 이미지 업로드, 유저 검색, 팔로우·팔로워/팔로잉 목록 API 함수 |
 | `src/api/reviews.js` | 감상 작성·조회·목록·수정·삭제, 좋아요·답장 API 함수 |
-| `src/api/sessions.js` | 세션 일정(달력) 기간 조회·작성·수정·삭제 API 함수 |
+| `src/api/sessions.js` | 세션 일정(달력) 기간 조회·작성·수정·삭제 + **참가자 추가·삭제** API 함수 |
 | `src/api/notifications.js` | 알림 목록·안 읽은 개수·읽음 처리·실시간 구독 주소(SSE) API 함수 |
-| `src/constants/` | 태그·룰·스포일러 마커처럼 화면과 서버가 공유하는 상수 |
+| `src/constants/` | 태그·룰·스포일러 마커·프로필 배지처럼 화면과 서버가 공유하는 상수 |
+| `src/components/SessionParticipants.jsx` | 세션 일정의 **함께한 사람** 기록(추가·삭제, 프로필·감상 작성 링크) |
 | `src/App.css` | 페이지/카드/폼/버튼 등 공용 클래스 |
 | `src/index.css` | CSS 변수(색상·치수)·기본 리셋·폰트 |
 | `vite.config.js` | 플러그인, `@` 별칭, 포트(5173), `/api` 프록시 |

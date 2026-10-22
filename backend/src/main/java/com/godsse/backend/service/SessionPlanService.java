@@ -2,27 +2,38 @@ package com.godsse.backend.service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
+import com.godsse.backend.api.dto.UserSummary;
 import com.godsse.backend.common.exception.BadRequestException;
+import com.godsse.backend.common.exception.ConflictException;
 import com.godsse.backend.common.exception.ForbiddenException;
 import com.godsse.backend.common.exception.NotFoundException;
+import com.godsse.backend.domain.SessionParticipant;
 import com.godsse.backend.domain.SessionPlan;
 import com.godsse.backend.domain.User;
+import com.godsse.backend.repository.SessionParticipantRepository;
 import com.godsse.backend.repository.SessionPlanRepository;
 import com.godsse.backend.repository.UserRepository;
 
 /**
- * 세션 일정(달력) 작성·조회·수정·삭제.
+ * 세션 일정(달력) 작성·조회·수정·삭제 + 함께한 사람 기록.
  *
  * <p>
  * 일정은 <b>나만 보는 계획표</b>이므로 다른 사람의 일정은 조회·수정할 수 없다.
  * (감상과 달리 공개 범위 개념이 없다)
+ *
+ * <p>
+ * 함께한 사람은 <b>가입한 사용자</b>만 기록한다. 나중에 그 사람에게 감상을 남기러 갈 때
+ * 핸들이 필요하기 때문이다(자유 입력 이름은 프로필로 이어 줄 수 없다).
  */
 @Service
 @Transactional(readOnly = true)
@@ -32,10 +43,13 @@ public class SessionPlanService {
 	private static final long MAX_RANGE_DAYS = 62;
 
 	private final SessionPlanRepository sessionPlanRepository;
+	private final SessionParticipantRepository sessionParticipantRepository;
 	private final UserRepository userRepository;
 
-	public SessionPlanService(SessionPlanRepository sessionPlanRepository, UserRepository userRepository) {
+	public SessionPlanService(SessionPlanRepository sessionPlanRepository,
+			SessionParticipantRepository sessionParticipantRepository, UserRepository userRepository) {
 		this.sessionPlanRepository = sessionPlanRepository;
+		this.sessionParticipantRepository = sessionParticipantRepository;
 		this.userRepository = userRepository;
 	}
 
@@ -52,11 +66,8 @@ public class SessionPlanService {
 			throw new BadRequestException("to", "한 번에 " + MAX_RANGE_DAYS + "일까지만 조회할 수 있습니다.");
 		}
 
-		return this.sessionPlanRepository
-			.findByOwnerIdAndPlannedDateBetweenOrderByPlannedDateAscIdAsc(loginUser.getId(), from, to)
-			.stream()
-			.map(SessionPlanResponse::of)
-			.toList();
+		return toResponses(this.sessionPlanRepository
+			.findByOwnerIdAndPlannedDateBetweenOrderByPlannedDateAscIdAsc(loginUser.getId(), from, to));
 	}
 
 	/** 일정을 만든다. 상태는 항상 {@code PLANNED} 로 시작한다. */
@@ -69,7 +80,7 @@ public class SessionPlanService {
 				request.ruleName().trim(), trimToNull(request.scenarioName()), Boolean.TRUE.equals(request.gm()),
 				trimToNull(request.memo()));
 
-		return SessionPlanResponse.of(this.sessionPlanRepository.save(plan));
+		return SessionPlanResponse.of(this.sessionPlanRepository.save(plan), List.of());
 	}
 
 	/**
@@ -89,13 +100,91 @@ public class SessionPlanService {
 			plan.changeStatus(request.status());
 		}
 
-		return SessionPlanResponse.of(plan);
+		return SessionPlanResponse.of(plan, participantsOf(plan.getId()));
 	}
 
-	/** 일정을 삭제한다. */
+	/** 일정을 삭제한다. 함께한 사람 행을 먼저 지워야 FK 제약에 걸리지 않는다. */
 	@Transactional
 	public void delete(User loginUser, Long id) {
-		this.sessionPlanRepository.delete(getOwnedPlan(loginUser, id));
+		SessionPlan plan = getOwnedPlan(loginUser, id);
+
+		this.sessionParticipantRepository.deleteByPlanId(plan.getId());
+		this.sessionPlanRepository.delete(plan);
+	}
+
+	/**
+	 * 일정에 함께한 사람을 추가한다.
+	 *
+	 * <p>
+	 * 이미 있는 사람은 409, 나 자신은 400, 없는 핸들은 404 로 알려 준다.
+	 */
+	@Transactional
+	public void addParticipant(User loginUser, Long id, String handle) {
+		SessionPlan plan = getOwnedPlan(loginUser, id);
+		User participant = getUserByHandle(handle);
+
+		if (participant.getId().equals(loginUser.getId())) {
+			throw new BadRequestException("handle", "나 자신은 참가자로 넣을 수 없습니다.");
+		}
+		if (this.sessionParticipantRepository.existsByPlanIdAndUserId(plan.getId(), participant.getId())) {
+			throw new ConflictException("이미 참가자로 기록된 사람입니다.");
+		}
+
+		this.sessionParticipantRepository.save(new SessionParticipant(plan, participant));
+	}
+
+	/** 일정에서 함께한 사람을 뺀다. */
+	@Transactional
+	public void removeParticipant(User loginUser, Long id, String handle) {
+		SessionPlan plan = getOwnedPlan(loginUser, id);
+		User participant = getUserByHandle(handle);
+
+		SessionParticipant link = this.sessionParticipantRepository
+			.findByPlanIdAndUserId(plan.getId(), participant.getId())
+			.orElseThrow(() -> new NotFoundException("참가자를 찾을 수 없습니다."));
+
+		this.sessionParticipantRepository.delete(link);
+	}
+
+	/**
+	 * 일정 목록을 응답으로 바꾼다.
+	 *
+	 * <p>
+	 * 참가자는 <b>한 번에</b> 읽어 일정별로 묶는다. 일정마다 조회하면 달력 한 달치를 그릴 때
+	 * 일정 수만큼 쿼리가 나간다(N+1).
+	 */
+	private List<SessionPlanResponse> toResponses(List<SessionPlan> plans) {
+		if (plans.isEmpty()) {
+			return List.of();
+		}
+
+		List<Long> planIds = plans.stream().map(SessionPlan::getId).toList();
+		Map<Long, List<UserSummary>> participantsByPlan = new HashMap<>();
+
+		for (SessionParticipant participant : this.sessionParticipantRepository.findByPlanIdsWithUser(planIds)) {
+			participantsByPlan.computeIfAbsent(participant.getPlan().getId(), key -> new ArrayList<>())
+				.add(UserSummary.of(participant.getUser()));
+		}
+
+		return plans.stream()
+			.map(plan -> SessionPlanResponse.of(plan, participantsByPlan.getOrDefault(plan.getId(), List.of())))
+			.toList();
+	}
+
+	/** 한 일정의 참가자 목록(추가·수정 응답용). */
+	private List<UserSummary> participantsOf(Long planId) {
+		return this.sessionParticipantRepository.findByPlanIdWithUser(planId)
+			.stream()
+			.map(participant -> UserSummary.of(participant.getUser()))
+			.toList();
+	}
+
+	/** 핸들로 사용자를 찾는다. 없으면 404. */
+	private User getUserByHandle(String handle) {
+		String trimmed = handle == null ? "" : handle.trim();
+
+		return this.userRepository.findByHandle(trimmed)
+			.orElseThrow(() -> new NotFoundException("handle", "해당 핸들의 사용자를 찾을 수 없습니다."));
 	}
 
 	/** 내 일정인지 확인하고 가져온다. */

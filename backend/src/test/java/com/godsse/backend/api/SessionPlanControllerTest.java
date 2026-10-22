@@ -153,6 +153,125 @@ class SessionPlanControllerTest {
 			.andExpect(jsonPath("$.errors[0].field").value("to"));
 	}
 
+	@Test
+	@DisplayName("함께한 사람을 추가하면 목록 응답에 함께 나온다")
+	void addParticipant() throws Exception {
+		MockHttpSession owner = signup("planner");
+		signup("partner");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+
+		addParticipant(owner, id, "partner");
+
+		this.mockMvc
+			.perform(get("/api/sessions").session(owner).param("from", "2026-10-01").param("to", "2026-10-31"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].participants.length()").value(1))
+			.andExpect(jsonPath("$[0].participants[0].handle").value("partner"))
+			.andExpect(jsonPath("$[0].participants[0].nickname").value("고드세"));
+	}
+
+	@Test
+	@DisplayName("참가자 추가는 빈 핸들 400, 없는 핸들 404, 나 자신 400, 중복 409, 남의 일정 403")
+	void participantErrors() throws Exception {
+		MockHttpSession owner = signup("planner");
+		signup("partner");
+		MockHttpSession other = signup("other");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+
+		// 빈 핸들 — 요청 검증(@NotBlank)
+		this.mockMvc
+			.perform(post("/api/sessions/" + id + "/participants").session(owner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"   \"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("handle"));
+
+		// 없는 사용자
+		this.mockMvc
+			.perform(post("/api/sessions/" + id + "/participants").session(owner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"ghost\"}"))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.errors[0].field").value("handle"));
+
+		// 나 자신
+		this.mockMvc
+			.perform(post("/api/sessions/" + id + "/participants").session(owner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"planner\"}"))
+			.andExpect(status().isBadRequest());
+
+		// 중복
+		addParticipant(owner, id, "partner");
+		this.mockMvc
+			.perform(post("/api/sessions/" + id + "/participants").session(owner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"partner\"}"))
+			.andExpect(status().isConflict());
+
+		// 남의 일정
+		this.mockMvc
+			.perform(post("/api/sessions/" + id + "/participants").session(other)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"partner\"}"))
+			.andExpect(status().isForbidden());
+
+		// 없는 일정
+		this.mockMvc
+			.perform(post("/api/sessions/999999/participants").session(owner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"partner\"}"))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@DisplayName("참가자를 빼면 목록에서 사라지고, 없는 참가자를 빼면 404")
+	void removeParticipant() throws Exception {
+		MockHttpSession owner = signup("planner");
+		signup("partner");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+		addParticipant(owner, id, "partner");
+
+		this.mockMvc.perform(delete("/api/sessions/" + id + "/participants/partner").session(owner))
+			.andExpect(status().isNoContent());
+
+		this.mockMvc
+			.perform(get("/api/sessions").session(owner).param("from", "2026-10-01").param("to", "2026-10-31"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].participants.length()").value(0));
+
+		this.mockMvc.perform(delete("/api/sessions/" + id + "/participants/partner").session(owner))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@DisplayName("참가자가 있는 일정도 삭제할 수 있다")
+	void deletePlanWithParticipants() throws Exception {
+		MockHttpSession owner = signup("planner");
+		signup("partner");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+		addParticipant(owner, id, "partner");
+
+		this.mockMvc.perform(delete("/api/sessions/" + id).session(owner)).andExpect(status().isNoContent());
+
+		this.mockMvc
+			.perform(get("/api/sessions").session(owner).param("from", "2026-10-01").param("to", "2026-10-31"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
+	@DisplayName("참가자 API 도 로그인이 필요하다")
+	void participantsRequireLogin() throws Exception {
+		this.mockMvc
+			.perform(post("/api/sessions/1/participants").contentType(MediaType.APPLICATION_JSON)
+				.content("{\"handle\":\"anyone\"}"))
+			.andExpect(status().isUnauthorized());
+
+		this.mockMvc.perform(delete("/api/sessions/1/participants/anyone")).andExpect(status().isUnauthorized());
+	}
+
+	private void addParticipant(MockHttpSession owner, long id, String handle) throws Exception {
+		this.mockMvc
+			.perform(post("/api/sessions/" + id + "/participants").session(owner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"handle\":\"" + handle + "\"}"))
+			.andExpect(status().isNoContent());
+	}
+
 	private long createPlan(MockHttpSession session, String title, String date) throws Exception {
 		MvcResult result = this.mockMvc
 			.perform(post("/api/sessions").session(session).contentType(MediaType.APPLICATION_JSON)

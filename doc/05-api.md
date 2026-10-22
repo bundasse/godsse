@@ -137,9 +137,12 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
   "createdAt": "2026-09-25T10:01:30.323473Z",
   "receivedReviewCount": 3,
   "writtenReviewCount": 5,
+  "receivedLikeCount": 12,
+  "receivedReplyCount": 4,
   "followerCount": 12,
   "followingCount": 8,
-  "isFollowing": false
+  "isFollowing": false,
+  "badges": ["FIRST_REVIEW"]
 }
 ```
 
@@ -148,9 +151,24 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/auth/logout
 | `profileImageUrl` | 이미지를 올리지 않았으면 `null` |
 | `receivedReviewCount` | 이 사람이 받은 감상 수 |
 | `writtenReviewCount` | 이 사람이 쓴 감상 수 |
+| `receivedLikeCount` | 이 사람이 쓴 감상들이 받은 **하트 총합** |
+| `receivedReplyCount` | 이 사람이 쓴 감상들에 달린 **답장 총합** |
 | `followerCount` | 이 사람을 팔로우하는 사람 수 |
 | `followingCount` | 이 사람이 팔로우하는 사람 수 |
 | `isFollowing` | **조회자**가 이 사람을 팔로우 중인지. 로그인하지 않았다면 `false` |
+| `badges` | 활동 배지 코드 목록(아래 표). 없으면 빈 배열 |
+
+**배지 코드** — 서버는 코드만 주고, 화면 문구는 `frontend/src/constants/badges.js` 가 정합니다.
+
+| 코드 | 조건 | 화면 문구 |
+| --- | --- | --- |
+| `FIRST_REVIEW` | 쓴 감상 ≥ 1 | 🖊️ 첫 감상 |
+| `REVIEW_10` | 쓴 감상 ≥ 10 | 📚 감상 10편 |
+| `RECEIVED_10` | 받은 감상 ≥ 10 | 💌 감상 10편 받음 |
+| `HEARTS_10` | 받은 하트 ≥ 10 | ❤️ 하트 10개 |
+| `FOLLOWERS_10` | 팔로워 ≥ 10 | 👥 팔로워 10명 |
+
+> 배지는 DB 에 저장하지 않고 **조회할 때마다 숫자로 계산**합니다. 그래서 좋아요를 취소해 10개 아래로 내려가면 배지도 바로 사라집니다.
 
 **응답 404** — 없는 핸들
 
@@ -434,13 +452,17 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
     "gm": true,
     "memo": "모집 중",
     "status": "PLANNED",
-    "createdAt": "2026-10-15T09:12:00.123Z"
+    "createdAt": "2026-10-15T09:12:00.123Z",
+    "participants": [
+      { "handle": "godssefan", "nickname": "고드세팬", "profileImageUrl": null }
+    ]
   }
 ]
 ```
 
 - **응답 400** — 기간이 잘못되었거나 62일 초과
 - **응답 401** — 미로그인
+- `participants` — 함께한 사람(5.5). 없으면 빈 배열
 
 > 달력은 한 달치를 한 번에 그리므로 페이지네이션 대신 **기간**으로 받습니다.
 
@@ -470,7 +492,28 @@ curl.exe -b "$env:TEMP\ck.txt" -X POST http://localhost:8080/api/users/me/avatar
 
 - **응답 204 / 403 / 404**
 
-### 5.5 상태 값
+### 5.5 참가자(함께한 사람) — `POST`·`DELETE /api/sessions/{id}/participants` (소유자만)
+
+세션을 마친 뒤 "누구에게 감상을 쓸지" 기억하지 않아도 되도록, 일정에 함께한 사람을 기록합니다.
+**가입한 사용자만** 핸들로 추가할 수 있습니다(프로필·감상 작성 링크로 이어 주려면 실제 사용자여야 함).
+
+```text
+POST   /api/sessions/1/participants          {"handle":"godssefan"}   → 204
+DELETE /api/sessions/1/participants/godssefan                        → 204
+```
+
+| 상황 | 코드 |
+| --- | --- |
+| 성공 | **204** |
+| `handle` 이 비었거나 나 자신 | **400** |
+| 없는 핸들 · 없는 일정 · 기록되지 않은 참가자 삭제 | **404** |
+| 이미 참가자 | **409** |
+| 남의 일정 | **403** |
+| 미로그인 | **401** |
+
+> 참가자는 목록 응답(`5.1`)의 `participants` 로 함께 내려옵니다. 일정을 삭제하면 참가자 행도 함께 지워집니다.
+
+### 5.6 상태 값
 
 | 값 | 뜻 |
 | --- | --- |

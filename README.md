@@ -140,6 +140,8 @@ npm run dev
 | POST   | `/api/sessions`     | 세션 일정 작성                            |
 | PATCH  | `/api/sessions/{id}` | 세션 일정 수정(상태 변경 포함)           |
 | DELETE | `/api/sessions/{id}` | 세션 일정 삭제 (204)                      |
+| POST   | `/api/sessions/{id}/participants` | 함께한 사람 추가 (204)         |
+| DELETE | `/api/sessions/{id}/participants/{handle}` | 함께한 사람 제거 (204) |
 
 `POST /api/hello/echo` 요청 예시:
 

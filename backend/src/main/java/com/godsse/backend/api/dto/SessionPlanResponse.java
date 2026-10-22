@@ -2,6 +2,7 @@ package com.godsse.backend.api.dto;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 import com.godsse.backend.domain.SessionPlan;
 import com.godsse.backend.domain.enums.SessionStatus;
@@ -18,13 +19,15 @@ import com.godsse.backend.domain.enums.SessionStatus;
  * @param memo         메모(없으면 null)
  * @param status       상태(PLANNED / DONE / CANCELED)
  * @param createdAt    작성 시각
+ * @param participants 함께한 사람 목록(없으면 빈 배열)
  */
 public record SessionPlanResponse(Long id, String title, LocalDate plannedDate, String ruleName, String scenarioName,
-		boolean gm, String memo, SessionStatus status, Instant createdAt) {
+		boolean gm, String memo, SessionStatus status, Instant createdAt, List<UserSummary> participants) {
 
-	public static SessionPlanResponse of(SessionPlan plan) {
+	public static SessionPlanResponse of(SessionPlan plan, List<UserSummary> participants) {
 		return new SessionPlanResponse(plan.getId(), plan.getTitle(), plan.getPlannedDate(), plan.getRuleName(),
-				plan.getScenarioName(), plan.isGm(), plan.getMemo(), plan.getStatus(), plan.getCreatedAt());
+				plan.getScenarioName(), plan.isGm(), plan.getMemo(), plan.getStatus(), plan.getCreatedAt(),
+				List.copyOf(participants));
 	}
 
 }

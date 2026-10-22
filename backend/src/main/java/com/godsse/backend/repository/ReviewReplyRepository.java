@@ -17,4 +17,13 @@ public interface ReviewReplyRepository extends JpaRepository<ReviewReply, Long> 
 	/** 이 감상의 답장 수. */
 	long countByReviewId(Long reviewId);
 
+	/**
+	 * 이 사람이 쓴 감상들에 달린 답장 수의 합.
+	 *
+	 * <p>
+	 * 이름에 밑줄이 없는 {@code countByReviewAuthorId} 는 {@code review.author.id} 로 읽힌다.
+	 * (엔티티의 필드 이름을 따라가며 해석하는 "파생 쿼리")
+	 */
+	long countByReviewAuthorId(Long authorId);
+
 }

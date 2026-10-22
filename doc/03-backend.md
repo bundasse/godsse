@@ -60,6 +60,7 @@ com.godsse.backend
 │  ├─ ReviewReply.java             # review_replies (답장)
 │  ├─ RuleSystem.java              # rule_systems
 │  ├─ SessionPlan.java             # session_plans (달력)
+│  ├─ SessionParticipant.java      # session_participants (함께한 사람)
 │  └─ enums/
 │     ├─ SpoilerMode.java          # NONE / BLUR / FOLD
 │     ├─ Visibility.java           # PUBLIC / FOLLOWERS / PRIVATE
@@ -72,7 +73,8 @@ com.godsse.backend
 │  ├─ ReviewLikeRepository.java
 │  ├─ ReviewReplyRepository.java
 │  ├─ RuleSystemRepository.java
-│  └─ SessionPlanRepository.java
+│  ├─ SessionPlanRepository.java
+│  └─ SessionParticipantRepository.java
 └─ config/
    ├─ CorsConfig.java              # WebMvcConfigurer 로 /api/** CORS 설정
    ├─ WebConfig.java               # /uploads/** 를 업로드 폴더와 연결
@@ -124,7 +126,9 @@ com.godsse.backend
 | `service/ReviewService` | 감상 작성·조회·수정·삭제, 공개 범위 판단 |
 | `api/ReviewController` | `/api/reviews/**` — 감상 작성·목록·전문·수정·삭제 |
 | `common/ReviewPreview` | 목록용 미리보기(스포일러가 새지 않게 자름) |
-| `service/SessionPlanService` | 세션 일정 작성·수정·삭제, 기간 조회(소유자 확인) |
+| `common/ProfileBadges` | 프로필 활동 배지 계산(저장하지 않고 숫자에서 매번 계산) |
+| `service/SessionPlanService` | 세션 일정 작성·수정·삭제, 기간 조회(소유자 확인), **함께한 사람** 추가·삭제 |
+| `domain/SessionParticipant` | 일정에 연결된 참가자(일정+사용자 유니크, 목록 조회는 `join fetch`) |
 | `api/SessionPlanController` | `/api/sessions/**` — 달력 일정 |
 | `domain/ReviewLike`·`ReviewReply` | 좋아요·답장(리뷰 아래 자식 테이블) |
 | `service/ReviewService`(확장) | 좋아요·답장, 좋아요 수·내 좋아요 여부 매핑 |
@@ -230,11 +234,12 @@ public class HelloController {
 | `api/HelloControllerTest` | `@SpringBootTest` + `@AutoConfigureMockMvc` 로 HTTP 계층 검증 4건 |
 | `repository/UserRepositoryTest` | 엔티티 매핑/리포지토리 동작 검증 2건 (`@Transactional` 로 롤백) |
 | `api/AuthControllerTest` | 회원가입·로그인·로그아웃·내 정보 검증 8건 |
-| `api/UserControllerTest` | 프로필 조회·검색·편집·이미지 업로드 검증 10건 |
+| `api/UserControllerTest` | 프로필 조회·검색·편집·이미지 업로드 + **통계·배지** 검증 11건 |
 | `api/FollowControllerTest` | 팔로우·언팔로우·목록 검증 9건 |
 | `api/ReviewControllerTest` | 감상 작성·조회·공개범위·수정·삭제 검증 14건 |
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
-| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 검증 7건 |
+| `common/ProfileBadgesTest` | 배지 계산 규칙(기준 미달·첫 감상·전체) 검증 4건 |
+| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 + **참가자 추가/삭제/권한** 검증 12건 |
 | `api/ReviewReactionControllerTest` | 좋아요·답장·공개범위 검증 8건 |
 | `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 + **SSE 연결/전송** 검증 10건 |
 

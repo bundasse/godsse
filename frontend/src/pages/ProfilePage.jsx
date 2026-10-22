@@ -5,6 +5,7 @@ import { fetchUserProfile } from '@/api/users.js'
 import Avatar from '@/components/Avatar.jsx'
 import FollowButton from '@/components/FollowButton.jsx'
 import ShareButton from '@/components/ShareButton.jsx'
+import { PROFILE_BADGE_MAP } from '@/constants/badges.js'
 import { useAuth } from '@/context/auth.js'
 
 function ProfilePage() {
@@ -92,8 +93,31 @@ function ProfilePage() {
           </Link>
           <span>받은 감상 {profile.receivedReviewCount}</span>
           <span>쓴 감상 {profile.writtenReviewCount}</span>
+          <span title="내가 쓴 감상들이 받은 하트 총합">받은 하트 {profile.receivedLikeCount}</span>
+          <span title="내가 쓴 감상들에 달린 답장 총합">
+            받은 답장 {profile.receivedReplyCount}
+          </span>
           <span>{new Date(profile.createdAt).toLocaleDateString('ko-KR')} 가입</span>
         </div>
+
+        {profile.badges.length > 0 && (
+          <ul className="profile__badges">
+            {profile.badges.map((code) => {
+              const badge = PROFILE_BADGE_MAP.get(code)
+
+              // 서버가 이 화면보다 먼저 새 배지를 만들었을 수 있다. 모르는 코드는 건너뛴다.
+              if (!badge) {
+                return null
+              }
+
+              return (
+                <li className="badge" key={badge.code} title={badge.hint}>
+                  <span aria-hidden="true">{badge.emoji}</span> {badge.label}
+                </li>
+              )
+            })}
+          </ul>
+        )}
 
         {isMe ? (
           <p className="text--muted">

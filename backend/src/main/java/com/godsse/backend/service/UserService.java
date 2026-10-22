@@ -1,5 +1,6 @@
 package com.godsse.backend.service;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -12,9 +13,12 @@ import com.godsse.backend.api.dto.UpdateProfileRequest;
 import com.godsse.backend.api.dto.UserProfileDetailResponse;
 import com.godsse.backend.api.dto.UserProfileResponse;
 import com.godsse.backend.api.dto.UserSummary;
+import com.godsse.backend.common.ProfileBadges;
 import com.godsse.backend.common.exception.NotFoundException;
 import com.godsse.backend.domain.User;
 import com.godsse.backend.repository.FollowRepository;
+import com.godsse.backend.repository.ReviewLikeRepository;
+import com.godsse.backend.repository.ReviewReplyRepository;
 import com.godsse.backend.repository.ReviewRepository;
 import com.godsse.backend.repository.UserRepository;
 
@@ -37,13 +41,18 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final ReviewRepository reviewRepository;
 	private final FollowRepository followRepository;
+	private final ReviewLikeRepository reviewLikeRepository;
+	private final ReviewReplyRepository reviewReplyRepository;
 	private final FileStorageService fileStorageService;
 
 	public UserService(UserRepository userRepository, ReviewRepository reviewRepository,
-			FollowRepository followRepository, FileStorageService fileStorageService) {
+			FollowRepository followRepository, ReviewLikeRepository reviewLikeRepository,
+			ReviewReplyRepository reviewReplyRepository, FileStorageService fileStorageService) {
 		this.userRepository = userRepository;
 		this.reviewRepository = reviewRepository;
 		this.followRepository = followRepository;
+		this.reviewLikeRepository = reviewLikeRepository;
+		this.reviewReplyRepository = reviewReplyRepository;
 		this.fileStorageService = fileStorageService;
 	}
 
@@ -70,22 +79,31 @@ public class UserService {
 	 * 프로필 화면용 정보.
 	 *
 	 * <p>
-	 * 감상 수와 팔로워/팔로잉 수까지 함께 담는다. {@code viewer} 는 "지금 보고 있는 사람"이며
+	 * 감상 수·하트·답장·팔로워 수까지 함께 담는다. {@code viewer} 는 "지금 보고 있는 사람"이며
 	 * 로그인하지 않았다면 null 이다(그때는 {@code isFollowing} 이 false).
+	 *
+	 * <p>
+	 * 숫자는 모두 <b>count 쿼리</b>로 센다. 감상을 하나씩 읽어 세면 감상이 늘수록 느려지기 때문이다.
+	 * 배지는 이 숫자에서 바로 계산한다({@link ProfileBadges}).
 	 */
 	public UserProfileDetailResponse getProfile(String handle, User viewer) {
 		User user = getByHandle(handle);
 
 		long receivedReviewCount = this.reviewRepository.countByRecipientId(user.getId());
 		long writtenReviewCount = this.reviewRepository.countByAuthorId(user.getId());
+		long receivedLikeCount = this.reviewLikeRepository.countByReviewAuthorId(user.getId());
+		long receivedReplyCount = this.reviewReplyRepository.countByReviewAuthorId(user.getId());
 		long followerCount = this.followRepository.countByFollowingId(user.getId());
 		long followingCount = this.followRepository.countByFollowerId(user.getId());
 
 		boolean isFollowing = viewer != null
 				&& this.followRepository.existsByFollowerIdAndFollowingId(viewer.getId(), user.getId());
 
-		return UserProfileDetailResponse.of(user, receivedReviewCount, writtenReviewCount, followerCount,
-				followingCount, isFollowing);
+		List<String> badges = ProfileBadges.of(writtenReviewCount, receivedReviewCount, receivedLikeCount,
+				followerCount);
+
+		return UserProfileDetailResponse.of(user, receivedReviewCount, writtenReviewCount, receivedLikeCount,
+				receivedReplyCount, followerCount, followingCount, isFollowing, badges);
 	}
 
 	/**

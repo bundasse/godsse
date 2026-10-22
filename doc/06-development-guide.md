@@ -201,6 +201,16 @@ cd backend
 | 2026-10-15 | push 시점: 알림 생성 · 좋아요 취소 · 언팔로우 · 하나/모두 읽음. 30분 타임아웃 후 `EventSource` 자동 재연결, 끊긴 연결은 즉시 목록에서 제거 |
 | 2026-10-15 | 프론트 — `NotificationBell` 이 `EventSource`(withCredentials)로 구독, SSE 가 막힌 환경 대비 화면 이동 시 조회 유지 |
 | 2026-10-15 | 검증: 백엔드 테스트 **80건 통과**, 프론트 빌드(68 modules), SSE E2E(connected 0 → changed 1 → changed 0) |
+| 2026-10-22 | **프로필 통계·배지** — `GET /api/users/{handle}` 에 `receivedLikeCount`·`receivedReplyCount`·`badges` 추가(저장하지 않고 count 쿼리로 계산) |
+| 2026-10-22 | 배지 규칙은 `common/ProfileBadges`(첫 감상·감상 10편·받은 감상 10편·하트 10·팔로워 10), 화면 문구는 `constants/badges.js` — 서버는 코드만 내려준다 |
+| 2026-10-22 | 하트·답장 합계는 `countByReviewAuthorId`(JPQL/파생 쿼리)로 **감상 수만큼 쿼리가 나가지 않게** 한 번에 센다 |
+| 2026-10-22 | 프로필 화면에 받은 하트·답장 통계와 배지 칩 표시, 모르는 배지 코드는 건너뛰도록 방어 |
+| 2026-10-22 | 검증: 백엔드 테스트 **85건 통과**, 프론트 빌드(69 modules), 프로필 E2E(쓴 감상 1·하트 1·답장 1 → `FIRST_REVIEW`, 받은 사람 배지 0) |
+| 2026-10-22 | **세션 참가자 기록** — `session_participants`(일정+사용자 유니크), `POST/DELETE /api/sessions/{id}/participants[/{handle}]`(소유자만), 일정 응답에 `participants` 추가 |
+| 2026-10-22 | 목록 조회는 `join fetch` + 일괄 조회 후 일정별 묶음(N+1 방지), 일정 삭제 시 참가자 행 먼저 삭제(자식 → 부모) |
+| 2026-10-22 | 오류 구분 — 빈 핸들·나 자신 400, 없는 핸들 404, 중복 409, 남의 일정 403 |
+| 2026-10-22 | 프론트 — `SessionParticipants`(핸들 입력으로 추가, × 로 제거, 프로필·**감상 작성 링크**로 이동), 달력 카드에 표시 |
+| 2026-10-22 | 검증: 백엔드 테스트 **90건 통과**, 프론트 빌드(70 modules), 참가자 E2E(204·409·400·404·403·삭제 후 0건·일정 삭제 204·미로그인 401) |
 
 
 

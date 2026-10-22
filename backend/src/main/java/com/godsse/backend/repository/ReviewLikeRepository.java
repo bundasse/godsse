@@ -30,4 +30,14 @@ public interface ReviewLikeRepository extends JpaRepository<ReviewLike, Long> {
 	@Query("select l.review.id from ReviewLike l where l.user.id = :userId and l.review.id in :reviewIds")
 	List<Long> findLikedReviewIds(@Param("userId") Long userId, @Param("reviewIds") List<Long> reviewIds);
 
+	/**
+	 * 이 사람이 쓴 감상들이 받은 좋아요 수의 합.
+	 *
+	 * <p>
+	 * {@code countByReviewId} 를 감상마다 부르면 감상 수만큼 쿼리가 나가므로(N+1),
+	 * {@code review.author.id} 로 한 번에 센다.
+	 */
+	@Query("select count(l) from ReviewLike l where l.review.author.id = :authorId")
+	long countByReviewAuthorId(@Param("authorId") Long authorId);
+
 }

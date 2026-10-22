@@ -32,6 +32,8 @@
         └────────────────┘       └────────────────┘
 
         users ──(follower_id)──► follows ──(following_id)──► users
+
+        session_plans ──(1:N)──► session_participants ──(user_id)──► users
 ```
 
 | 엔티티 | 테이블 | 설명 |
@@ -41,6 +43,7 @@
 | `Review` | `reviews` | 감상 메시지(리뷰). 세션 정보를 포함 |
 | `RuleSystem` | `rule_systems` | 룰 자동완성용 목록 |
 | `SessionPlan` | `session_plans` | 마이페이지 달력의 세션 일정 |
+| `SessionParticipant` | `session_participants` | 일정의 **함께한 사람** (일정 + 사용자 유니크) |
 | (값 목록) | `review_tags` | 리뷰의 감정 태그(`@ElementCollection`) |
 | `ReviewLike` | `review_likes` | 감상 **좋아요** (리뷰 + 사용자 유니크) |
 | `ReviewReply` | `review_replies` | 감상에 달린 **답장** (한 단계) |
@@ -169,6 +172,22 @@
 > 사용자를 **두 번** 참조합니다(받는 사람 / 행동한 사람). "알림 한 줄 = 누가 누구에게 무슨 일"이라는
 > 최소 단위로 두면, 종류가 늘어나도 테이블을 바꾸지 않아도 됩니다.
 > 읽음 여부는 boolean 대신 **`read_at`(시각)** 으로 두어 "언제 읽었는지"까지 남깁니다(NULL 이면 안 읽음).
+
+### 3.10 `session_participants` — 함께한 사람
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | BIGINT | PK | |
+| `session_plan_id` | BIGINT | NOT NULL, FK→session_plans | 어느 일정인지 |
+| `user_id` | BIGINT | NOT NULL, FK→users | 함께한 사람 |
+| `created_at`, `updated_at` | TIMESTAMP | NOT NULL | |
+
+제약: `uk_session_participants (session_plan_id, user_id)` — 같은 사람을 한 일정에 두 번 넣지 못한다
+
+인덱스: `idx_session_participants_plan(session_plan_id)`
+
+> 일정(`session_plans`)은 **나만 보는** 계획표지만, 참가자 기록은 "그 사람에게 감상을 쓰러 가는" 입구입니다.
+> 일정을 삭제할 때 참가자 행을 **먼저** 지웁니다(FK 제약), 그래서 서비스의 삭제 순서가 자식 → 부모입니다.
 
 ## 4. 스포일러 규칙
 

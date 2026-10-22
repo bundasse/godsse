@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,7 +51,44 @@ class UserControllerTest {
 			.andExpect(jsonPath("$.handle").value("godsse"))
 			.andExpect(jsonPath("$.nickname").value("고드세"))
 			.andExpect(jsonPath("$.receivedReviewCount").value(0))
-			.andExpect(jsonPath("$.writtenReviewCount").value(0));
+			.andExpect(jsonPath("$.writtenReviewCount").value(0))
+			.andExpect(jsonPath("$.receivedLikeCount").value(0))
+			.andExpect(jsonPath("$.receivedReplyCount").value(0))
+			.andExpect(jsonPath("$.badges.length()").value(0));
+	}
+
+	@Test
+	@DisplayName("프로필은 받은 하트·답장 수와 활동 배지를 함께 보여 준다")
+	void profileStatsAndBadges() throws Exception {
+		MockHttpSession writer = signup("writer");
+		MockHttpSession partner = signup("partner");
+		MockHttpSession liker = signup("liker");
+
+		long reviewId = createReview(writer, "partner");
+
+		this.mockMvc.perform(post("/api/reviews/" + reviewId + "/like").session(liker))
+			.andExpect(status().isNoContent());
+
+		this.mockMvc
+			.perform(post("/api/reviews/" + reviewId + "/replies").session(partner)
+				.contentType(MediaType.APPLICATION_JSON).content("{\"body\":\"좋은 감상이에요!\"}"))
+			.andExpect(status().isCreated());
+
+		// 감상을 쓴 사람: 쓴 감상 1 → 첫 감상 배지, 하트 1, 답장 1
+		this.mockMvc.perform(get("/api/users/writer"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.writtenReviewCount").value(1))
+			.andExpect(jsonPath("$.receivedLikeCount").value(1))
+			.andExpect(jsonPath("$.receivedReplyCount").value(1))
+			.andExpect(jsonPath("$.badges.length()").value(1))
+			.andExpect(jsonPath("$.badges[0]").value("FIRST_REVIEW"));
+
+		// 감상을 받은 사람: 받은 감상 1 이지만 아직 배지는 없다
+		this.mockMvc.perform(get("/api/users/partner"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.receivedReviewCount").value(1))
+			.andExpect(jsonPath("$.receivedLikeCount").value(0))
+			.andExpect(jsonPath("$.badges.length()").value(0));
 	}
 
 	@Test
@@ -157,6 +196,25 @@ class UserControllerTest {
 				"fake-png-bytes".getBytes(StandardCharsets.UTF_8));
 
 		this.mockMvc.perform(multipart("/api/users/me/avatar").file(image)).andExpect(status().isUnauthorized());
+	}
+
+	/** 감상을 남기고 그 id 를 돌려준다(본문은 100자 이상이어야 한다). */
+	private long createReview(MockHttpSession writer, String toHandle) throws Exception {
+		String json = "{\"toHandle\":\"" + toHandle
+				+ "\",\"playedOn\":\"2026-10-01\",\"ruleName\":\"던전월드\",\"body\":\"" + "가".repeat(120) + "\"}";
+
+		MvcResult result = this.mockMvc
+			.perform(post("/api/reviews").session(writer).contentType(MediaType.APPLICATION_JSON).content(json))
+			.andExpect(status().isCreated())
+			.andReturn();
+
+		Matcher matcher = Pattern.compile("\"id\"\\s*:\\s*(\\d+)")
+			.matcher(result.getResponse().getContentAsString());
+		if (!matcher.find()) {
+			throw new IllegalStateException("감상 id 를 찾지 못했습니다: " + result.getResponse().getContentAsString());
+		}
+
+		return Long.parseLong(matcher.group(1));
 	}
 
 	/** 회원가입해서 세션을 돌려준다. (회원가입 시 자동 로그인되므로 세션이 생긴다) */

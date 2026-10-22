@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.godsse.backend.api.dto.SessionParticipantRequest;
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
 import com.godsse.backend.common.LoginUser;
@@ -69,6 +70,26 @@ public class SessionPlanController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@LoginUser User user, @PathVariable Long id) {
 		this.sessionPlanService.delete(user, id);
+	}
+
+	/**
+	 * 일정에 함께한 사람을 추가한다(소유자만). 성공하면 204.
+	 *
+	 * <p>
+	 * 본문 예: {@code {"handle":"godssefan"}}
+	 */
+	@PostMapping("/{id}/participants")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void addParticipant(@LoginUser User user, @PathVariable Long id,
+			@Valid @RequestBody SessionParticipantRequest request) {
+		this.sessionPlanService.addParticipant(user, id, request.handle());
+	}
+
+	/** 일정에서 함께한 사람을 뺀다(소유자만). 성공하면 204. */
+	@DeleteMapping("/{id}/participants/{handle}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void removeParticipant(@LoginUser User user, @PathVariable Long id, @PathVariable String handle) {
+		this.sessionPlanService.removeParticipant(user, id, handle);
 	}
 
 }

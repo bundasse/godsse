@@ -17,3 +17,14 @@ export const updateSession = (id, body) => apiClient.patch(`/api/sessions/${id}`
 
 /** 일정 삭제. 성공하면 204. */
 export const deleteSession = (id) => apiClient.delete(`/api/sessions/${id}`)
+
+/**
+ * 일정에 "함께한 사람" 추가(핸들). 성공하면 204.
+ * 가입한 사용자만 기록할 수 있다(404 = 없는 핸들, 409 = 이미 있음, 400 = 나 자신).
+ */
+export const addSessionParticipant = (id, handle) =>
+  apiClient.post(`/api/sessions/${id}/participants`, { handle })
+
+/** 일정에서 참가자 제거. 성공하면 204. */
+export const removeSessionParticipant = (id, handle) =>
+  apiClient.delete(`/api/sessions/${id}/participants/${encodeURIComponent(handle)}`)

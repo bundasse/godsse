@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { createSession, deleteSession, fetchSessions, updateSession } from '@/api/sessions.js'
 import SessionForm from '@/components/SessionForm.jsx'
+import SessionParticipants from '@/components/SessionParticipants.jsx'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -248,6 +249,11 @@ function MyCalendar() {
                   {plan.scenarioName ? ` · ${plan.scenarioName}` : ''}
                 </p>
                 {plan.memo && <p className="text--muted">{plan.memo}</p>}
+
+                <SessionParticipants
+                  plan={plan}
+                  onChanged={() => setReloadCount((previous) => previous + 1)}
+                />
 
                 <div className="form__actions">
                   <button

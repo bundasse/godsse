@@ -238,6 +238,16 @@
   font-size: 14px;
 }
 
+/* 활동 배지 — .badge(공용 칩)를 그대로 쓰고 간격만 잡는다 */
+.profile__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* 사용자 카드(검색 결과) ----------------------------------------------------- */
 
 .card--link {
@@ -286,6 +296,50 @@
 .form__actions {
   display: flex;
   gap: 8px;
+}
+
+/* 한 줄짜리 인라인 폼(입력 + 버튼) */
+.form__inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.form__inline .form__input {
+  flex: 1;
+}
+
+/* 세션 참가자(함께한 사람) -------------------------------------------------- */
+
+.plan__people {
+  margin-top: 8px;
+}
+
+.plan__person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan__person a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.plan__person button {
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.plan__person button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .text--success {
