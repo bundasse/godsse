@@ -22,6 +22,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -234,9 +235,11 @@ class NotificationControllerTest {
 
 	@Test
 	@DisplayName("알림이 생기면 열려 있는 스트림으로 바뀐 개수를 밀어 준다")
+	// AFTER_COMMIT 리스너는 "진짜 커밋"이 있어야 돌기 때문에, 이 테스트만 테스트 트랜잭션을 쓰지 않는다.
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	void streamPushesChangedCount() throws Exception {
-		MockHttpSession writer = signup("writer");
-		MockHttpSession partner = signup("partner");
+		MockHttpSession writer = signup("ssewriter");
+		MockHttpSession partner = signup("ssepartner");
 
 		MvcResult stream = this.mockMvc.perform(get("/api/notifications/stream").session(partner))
 			.andExpect(status().isOk())
@@ -244,9 +247,31 @@ class NotificationControllerTest {
 			.andReturn();
 
 		// 감상이 만들어지면 받은 사람(partner)의 스트림으로 changed 가 나간다
-		createReview(writer, "partner");
+		createReview(writer, "ssepartner");
 
 		assertThat(stream.getResponse().getContentAsString()).contains("event:changed", "\"count\":1");
+
+		closeStream(stream);
+	}
+
+	@Test
+	@DisplayName("커밋 전에는 스트림으로 보내지 않는다")
+	void noPushBeforeCommit() throws Exception {
+		// 이 테스트는 클래스의 @Transactional 을 그대로 쓴다 → 테스트가 끝날 때 롤백된다.
+		// 그래서 알림은 만들어지지만 커밋이 없고, AFTER_COMMIT 리스너도 돌지 않는다.
+		MockHttpSession writer = signup("txwriter");
+		MockHttpSession partner = signup("txpartner");
+
+		MvcResult stream = this.mockMvc.perform(get("/api/notifications/stream").session(partner))
+			.andExpect(status().isOk())
+			.andExpect(request().asyncStarted())
+			.andReturn();
+
+		createReview(writer, "txpartner");
+
+		// 연결 직후의 connected 만 있고, changed 는 아직 나가지 않는다
+		assertThat(stream.getResponse().getContentAsString()).contains("event:connected")
+			.doesNotContain("event:changed");
 
 		closeStream(stream);
 	}

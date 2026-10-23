@@ -88,17 +88,76 @@ try {
 | --- | --- |
 | 끊긴 연결 정리 | 종료·시간 초과·오류·전송 실패 시 목록에서 제거 |
 | 프록시가 응답을 모음 | 로컬 개발은 문제 없음. 운영에서는 heartbeat(주석 줄)나 `X-Accel-Buffering: no` 검토 |
-| **커밋 전에 전송** | 서비스 트랜잭션 안에서 save → count 조회(자동 flush) 후 전송. 롤백되면 화면이 한 번 어긋날 수 있어, `@TransactionalEventListener(AFTER_COMMIT)` 로 옮기는 것이 다음 개선점 |
+| **커밋 전에 전송** | ~~롤백되면 없는 알림이 잠깐 보인다~~ → **해결**: 사건만 발행하고 `@TransactionalEventListener(AFTER_COMMIT)` 로 커밋 이후에 전송 (7장) |
 | 세션 만료 | 재연결 시 401 → `EventSource` 는 재시도만 반복하므로, 화면에서는 로그아웃 처리 필요 |
 | 여러 탭 | 탭마다 연결 1개. `Set<SseEmitter>` 라서 모두에게 전송된다 |
 | 테스트 | MockMvc 의 `request().asyncStarted()` + 응답 본문에 `event:` 문자열 확인, 끝나면 `MockAsyncContext.complete()` |
 
-## 7. 확인 문제
+## 7. 커밋 이후에 알리기 — 트랜잭션 이벤트
+
+### 문제
+
+```java
+@Transactional
+public void notify(...) {
+	notificationRepository.save(...);
+	notificationStream.publish(recipient.getId(), count);   // ❌ 커밋 전에 전송
+}
+```
+
+| 순서 | 문제 |
+| --- | --- |
+| 저장 → push → **커밋 실패** | 화면에는 "1"이 떴는데 DB 에는 없다 |
+| 커밋 전 다른 트랜잭션 | 아직 그 알림을 볼 수 없으므로 "1"은 사실이 아니다 |
+
+### 해결: 사건만 발행하고, 전송은 커밋 이후에
+
+```java
+// 1) 서비스: 사건만 발행한다(개수는 트랜잭션 안에서 센다)
+eventPublisher.publishEvent(new NotificationCountChangedEvent(userId, unreadCountOf(userId)));
+
+// 2) 리스너: 커밋이 끝난 뒤에만 호출된다
+@Component
+public class NotificationPushListener {
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+	public void onCountChanged(NotificationCountChangedEvent event) {
+		notificationStream.publish(event.userId(), event.count());
+	}
+}
+```
+
+| 선택 | 이유 |
+| --- | --- |
+| 개수를 **사건에 담는다** | 커밋 후 다시 조회하면 그 트랜잭션의 변경을 보장할 수 없다 |
+| `fallbackExecution = true` | 트랜잭션 없이 발행되는 경우(배치·테스트)에도 동작 |
+| `@EventListener` 대신 | `@EventListener` 는 **커밋 전에** 실행되어 문제가 그대로 남는다 |
+
+### 테스트에서 만나는 함정 ⚠️
+
+테스트 클래스에 `@Transactional` 이 붙어 있으면 테스트가 끝날 때 **롤백**되므로 **커밋 이벤트가 영원히 오지 않습니다.**
+
+```java
+// 커밋이 필요한 테스트만 테스트 트랜잭션을 끈다
+@Test
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+void streamPushesChangedCount() { ... }
+
+// 반대로, "커밋 전에는 안 보낸다"를 검증하는 테스트는 기본 @Transactional 그대로
+@Test
+void noPushBeforeCommit() {
+	assertThat(body).contains("event:connected").doesNotContain("event:changed");
+}
+```
+
+> 두 테스트가 한 쌍입니다. 하나는 "커밋되면 간다", 다른 하나는 "커밋 전엔 안 간다"를 확인합니다.
+
+## 8. 확인 문제
 
 1. 알림에 SSE 를 고르고 WebSocket 을 고르지 않은 이유는 무엇일까요?
 2. `onCompletion`/`onTimeout`/`onError` 중 하나라도 빠지면 무슨 일이 생길까요?
 3. 이벤트에 알림 전문을 담지 않고 **개수만** 보내는 이유는 무엇일까요?
 4. 좋아요 **취소** 때도 push 해야 하는 이유는 무엇일까요?
+5. `@TransactionalEventListener` 를 `@EventListener` 로 바꾸면 무엇이 나빠질까요?
 
 ## 관련 문서
 

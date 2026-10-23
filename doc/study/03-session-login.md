@@ -139,12 +139,69 @@ fetch(`${BASE_URL}${path}`, {
 | 서버를 여러 대로 늘리면 세션 공유가 안 됨 | 위와 같은 이유로 외부 세션 저장소 필요 |
 | CSRF(다른 사이트에서 우리 API 를 호출) | SameSite=Lax 로 완화. 불특정 다수 개방(Phase 4) 전에 Spring Security 의 CSRF 토큰 도입 검토 |
 
-## 6. 확인 문제
+## 6. 핸들 정규화는 한 곳에서
+
+핸들은 **아이디**입니다. 그런데 아이디를 다루는 곳이 여러 곳이라, "저장할 때는 소문자로 바꾸고
+조회할 때는 그대로 비교"하면 같은 사람을 못 찾습니다.
+
+| 진입점 | Before | After |
+| --- | --- | --- |
+| 회원가입(저장) | 소문자로 저장 ✅ | 소문자로 저장 ✅ |
+| 로그인 | 소문자로 변환 후 조회 ✅ | 같은 규칙 ✅ |
+| 프로필 `/api/users/{handle}` | **그대로 비교 → 404** ❌ | 대소문자 무시 ✅ |
+| 감상 `toHandle` | **그대로 비교 → 404** ❌ | 대소문자 무시 ✅ |
+| 팔로우 `/api/users/{handle}/follow` | **그대로 비교 → 404** ❌ | 대소문자 무시 ✅ |
+| 세션 참가자 `handle` | **그대로 비교 → 404** ❌ | 대소문자 무시 ✅ |
+
+### 규칙을 한 곳에 모은다
+
+```java
+public final class Handles {
+	/** 앞뒤 공백 제거 + 소문자. null 은 빈 문자열. */
+	public static String normalize(String handle) {
+		return handle == null ? "" : handle.trim().toLowerCase(Locale.ROOT);
+	}
+}
+```
+
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+
+	Optional<User> findByHandle(String handle);
+
+	/** default 메서드라 Spring Data 가 쿼리로 만들지 않고, 위 메서드를 그대로 쓴다. */
+	default Optional<User> findByNormalizedHandle(String handle) {
+		return findByHandle(Handles.normalize(handle));
+	}
+}
+```
+
+| 선택 | 이유 |
+| --- | --- |
+| `default` 메서드 | Spring Data 는 **추상 메서드만** 쿼리로 만든다. default 는 자바 코드로 실행된다 |
+| 이름에 `Normalized` | 호출하는 쪽에서 "정규화된 조회"임을 잊지 않는다 (`findByHandle` 을 직접 쓰면 규칙이 빠진다) |
+| 서비스가 아니라 리포지토리 | 프로필·감상·팔로우·참가자 **모두**가 거치는 지점이기 때문 |
+
+> Vue 로 비유하면, `handle.toLowerCase()` 를 컴포넌트마다 흩뿌리는 대신
+> `useHandle()` 같은 composable 하나에 규칙을 두는 것과 같습니다.
+
+### 왜 `lower(handle)` SQL 을 쓰지 않았나
+
+```sql
+select * from users where lower(handle) = lower(:handle)
+```
+
+- **맞는 방법**이지만, 컬럼에 인덱스를 타지 못할 수 있습니다(함수를 씌우면 일반 인덱스가 안 먹힘).
+- 이 프로젝트는 **저장을 항상 소문자로** 하므로, 값을 정규화해 비교하면 인덱스(`handle` UNIQUE)를 그대로 씁니다.
+- 나중에 대문자가 섞인 기존 데이터가 생기면 `lower()` 비교나 함수 인덱스 도입을 검토합니다.
+
+## 7. 확인 문제
 
 1. 브라우저 쿠키에 담기는 것은 "로그인 정보"일까요, "세션 번호"일까요?
 2. `changeSessionId()` 를 로그인 시점에 호출하는 이유는 무엇일까요?
 3. DB 에 저장된 해시만 보고 원래 비밀번호를 알 수 있을까요? 왜 그럴까요?
 4. 로그인 상태를 세션에 두면 프론트엔드는 왜 토큰을 저장할 필요가 없을까요?
+5. `findByHandle("Godsse")` 를 직접 호출하면 어떤 버그가 생길까요?
 
 ## 관련 문서
 

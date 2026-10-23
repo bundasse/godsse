@@ -179,11 +179,9 @@ public class SessionPlanService {
 			.toList();
 	}
 
-	/** 핸들로 사용자를 찾는다. 없으면 404. */
+	/** 핸들로 사용자를 찾는다. 대소문자·앞뒤 공백은 무시한다. 없으면 404. */
 	private User getUserByHandle(String handle) {
-		String trimmed = handle == null ? "" : handle.trim();
-
-		return this.userRepository.findByHandle(trimmed)
+		return this.userRepository.findByNormalizedHandle(handle)
 			.orElseThrow(() -> new NotFoundException("handle", "해당 핸들의 사용자를 찾을 수 없습니다."));
 	}
 

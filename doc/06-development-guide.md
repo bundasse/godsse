@@ -211,6 +211,14 @@ cd backend
 | 2026-10-22 | 오류 구분 — 빈 핸들·나 자신 400, 없는 핸들 404, 중복 409, 남의 일정 403 |
 | 2026-10-22 | 프론트 — `SessionParticipants`(핸들 입력으로 추가, × 로 제거, 프로필·**감상 작성 링크**로 이동), 달력 카드에 표시 |
 | 2026-10-22 | 검증: 백엔드 테스트 **90건 통과**, 프론트 빌드(70 modules), 참가자 E2E(204·409·400·404·403·삭제 후 0건·일정 삭제 204·미로그인 401) |
+| 2026-10-22 | **push 시점 정리** — `NotificationCountChangedEvent` 발행 + `NotificationPushListener`(`@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)`)로 **커밋 이후에만** SSE 전송 |
+| 2026-10-22 | 개수는 트랜잭션 안에서 세어 사건에 담는다(커밋 후 재조회 금지). `unreadCountOf` 를 id 기반으로 정리 |
+| 2026-10-22 | 테스트 — 커밋이 필요한 테스트만 `@Transactional(propagation = NOT_SUPPORTED)`, **커밋 전에는 push 되지 않음**을 확인하는 테스트 추가 |
+| 2026-10-22 | 검증: 백엔드 테스트 **91건 통과**, SSE E2E(connected 0 → changed 1 → changed 0) 재확인 |
+| 2026-10-22 | **핸들 정규화 통일** — `common/Handles.normalize`(공백 제거·소문자) 한 곳으로 모으고, `UserRepository.findByNormalizedHandle` 로 프로필·감상·팔로우·참가자 조회를 통일 |
+| 2026-10-22 | Before: 가입·로그인만 소문자로 바꾸고 조회는 그대로 비교해 `/api/users/Godsse`·`toHandle: "Partner"` 가 404 |
+| 2026-10-22 | After: 저장은 소문자, 조회는 대소문자·앞뒤 공백 무시(5개 진입점 동일 규칙). `AuthService` 의 중복 정규화 코드 제거 |
+| 2026-10-22 | 검증: 백엔드 테스트 **97건 통과**, 핸들 E2E(가입 201 → 대문자 프로필/로그인 200 → 대문자 `toHandle` 201 → 대소문자 팔로우/참가자 204 → 없는 핸들 404) |
 
 
 

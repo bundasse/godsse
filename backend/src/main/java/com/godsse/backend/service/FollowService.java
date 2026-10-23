@@ -98,7 +98,7 @@ public class FollowService {
 	}
 
 	private User getUserByHandle(String handle) {
-		return this.userRepository.findByHandle(handle)
+		return this.userRepository.findByNormalizedHandle(handle)
 			.orElseThrow(() -> new NotFoundException("handle", "해당 핸들의 사용자를 찾을 수 없습니다."));
 	}
 

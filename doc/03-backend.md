@@ -127,6 +127,7 @@ com.godsse.backend
 | `api/ReviewController` | `/api/reviews/**` — 감상 작성·목록·전문·수정·삭제 |
 | `common/ReviewPreview` | 목록용 미리보기(스포일러가 새지 않게 자름) |
 | `common/ProfileBadges` | 프로필 활동 배지 계산(저장하지 않고 숫자에서 매번 계산) |
+| `common/Handles` | 핸들 정규화(공백 제거·소문자) — 저장·조회가 같은 규칙을 쓰게 하는 한 곳 |
 | `service/SessionPlanService` | 세션 일정 작성·수정·삭제, 기간 조회(소유자 확인), **함께한 사람** 추가·삭제 |
 | `domain/SessionParticipant` | 일정에 연결된 참가자(일정+사용자 유니크, 목록 조회는 `join fetch`) |
 | `api/SessionPlanController` | `/api/sessions/**` — 달력 일정 |
@@ -135,6 +136,8 @@ com.godsse.backend
 | `domain/Notification` | 알림(받는 사람·행동한 사람·종류·관련 감상·읽은 시각) |
 | `service/NotificationService` | 알림 만들기(자기 행동 제외)·목록·읽음 처리 |
 | `service/NotificationStream` | 사용자별 SSE 연결 보관·전송(끊긴 연결 정리 포함) |
+| `service/NotificationPushListener` | **커밋 이후**에만 개수 변경을 스트림으로 전달(`@TransactionalEventListener`) |
+| `service/NotificationCountChangedEvent` | "개수가 바뀌었다"는 사건(받는 사람 id + 커밋 시점 개수) |
 | `api/NotificationController` | `/api/notifications/**` — 목록·안 읽은 개수·읽음 |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
@@ -234,14 +237,15 @@ public class HelloController {
 | `api/HelloControllerTest` | `@SpringBootTest` + `@AutoConfigureMockMvc` 로 HTTP 계층 검증 4건 |
 | `repository/UserRepositoryTest` | 엔티티 매핑/리포지토리 동작 검증 2건 (`@Transactional` 로 롤백) |
 | `api/AuthControllerTest` | 회원가입·로그인·로그아웃·내 정보 검증 8건 |
-| `api/UserControllerTest` | 프로필 조회·검색·편집·이미지 업로드 + **통계·배지** 검증 11건 |
-| `api/FollowControllerTest` | 팔로우·언팔로우·목록 검증 9건 |
-| `api/ReviewControllerTest` | 감상 작성·조회·공개범위·수정·삭제 검증 14건 |
+| `api/UserControllerTest` | 프로필 조회·검색·편집·이미지 업로드 + **통계·배지·대소문자** 검증 12건 |
+| `api/FollowControllerTest` | 팔로우·언팔로우·목록 + **대소문자** 검증 10건 |
+| `api/ReviewControllerTest` | 감상 작성·조회·공개범위·수정·삭제 + **받는 사람 대소문자** 검증 17건 |
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
 | `common/ProfileBadgesTest` | 배지 계산 규칙(기준 미달·첫 감상·전체) 검증 4건 |
-| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 + **참가자 추가/삭제/권한** 검증 12건 |
+| `common/HandlesTest` | 핸들 정규화(공백·대소문자·null) 검증 2건 |
+| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 + **참가자 추가/삭제/권한/대소문자** 검증 13건 |
 | `api/ReviewReactionControllerTest` | 좋아요·답장·공개범위 검증 8건 |
-| `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 + **SSE 연결/전송** 검증 10건 |
+| `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 + **SSE 연결/전송/커밋 전 미전송** 검증 11건 |
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 

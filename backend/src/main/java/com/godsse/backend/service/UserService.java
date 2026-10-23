@@ -13,6 +13,7 @@ import com.godsse.backend.api.dto.UpdateProfileRequest;
 import com.godsse.backend.api.dto.UserProfileDetailResponse;
 import com.godsse.backend.api.dto.UserProfileResponse;
 import com.godsse.backend.api.dto.UserSummary;
+import com.godsse.backend.common.Handles;
 import com.godsse.backend.common.ProfileBadges;
 import com.godsse.backend.common.exception.NotFoundException;
 import com.godsse.backend.domain.User;
@@ -66,13 +67,15 @@ public class UserService {
 			.orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
 	}
 
+	/** 핸들로 사용자를 찾는다. 대소문자·앞뒤 공백은 무시한다(없으면 404). */
 	public User getByHandle(String handle) {
-		return this.userRepository.findByHandle(handle)
+		return this.userRepository.findByNormalizedHandle(handle)
 			.orElseThrow(() -> new NotFoundException("handle", "해당 핸들의 사용자를 찾을 수 없습니다."));
 	}
 
+	/** 핸들 중복 확인(정규화 후). */
 	public boolean existsByHandle(String handle) {
-		return this.userRepository.existsByHandle(handle);
+		return this.userRepository.existsByHandle(Handles.normalize(handle));
 	}
 
 	/**

@@ -65,6 +65,19 @@ class ReviewControllerTest {
 	}
 
 	@Test
+	@DisplayName("감상은 받는 사람 핸들의 대소문자를 구분하지 않는다")
+	void createIgnoresRecipientCase() throws Exception {
+		MockHttpSession session = signup("writer");
+		signup("partner");
+
+		this.mockMvc
+			.perform(post("/api/reviews").session(session).contentType(MediaType.APPLICATION_JSON)
+				.content(reviewJson("Partner", LONG_BODY, null, null)))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.recipient.handle").value("partner"));
+	}
+
+	@Test
 	@DisplayName("감상이 100자 미만이면 400 과 body 오류를 반환한다")
 	void createWithShortBody() throws Exception {
 		MockHttpSession session = signup("writer");

@@ -154,6 +154,15 @@ class FollowControllerTest {
 	}
 
 	/** 회원가입해서 세션을 돌려준다. (회원가입 시 자동 로그인되므로 세션이 생긴다) */
+	@Test
+	@DisplayName("팔로우는 핸들 대소문자를 구분하지 않는다")
+	void followIgnoresCase() throws Exception {
+		MockHttpSession session = signup("follower");
+		signup("target");
+
+		this.mockMvc.perform(post("/api/users/Target/follow").session(session)).andExpect(status().isNoContent());
+	}
+
 	private MockHttpSession signup(String handle) throws Exception {
 		MvcResult result = this.mockMvc
 			.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON)

@@ -265,6 +265,21 @@ class SessionPlanControllerTest {
 		this.mockMvc.perform(delete("/api/sessions/1/participants/anyone")).andExpect(status().isUnauthorized());
 	}
 
+	@Test
+	@DisplayName("참가자 추가는 핸들 대소문자를 구분하지 않는다")
+	void participantIgnoresCase() throws Exception {
+		MockHttpSession owner = signup("planner");
+		signup("partner");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+
+		addParticipant(owner, id, "Partner");
+
+		this.mockMvc
+			.perform(get("/api/sessions").session(owner).param("from", "2026-10-01").param("to", "2026-10-31"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].participants[0].handle").value("partner"));
+	}
+
 	private void addParticipant(MockHttpSession owner, long id, String handle) throws Exception {
 		this.mockMvc
 			.perform(post("/api/sessions/" + id + "/participants").session(owner)

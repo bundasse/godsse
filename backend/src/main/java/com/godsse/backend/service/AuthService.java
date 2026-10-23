@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.godsse.backend.api.dto.LoginRequest;
 import com.godsse.backend.api.dto.SignupRequest;
 import com.godsse.backend.api.dto.UserProfileResponse;
+import com.godsse.backend.common.Handles;
 import com.godsse.backend.common.exception.ConflictException;
 import com.godsse.backend.common.exception.UnauthorizedException;
 import com.godsse.backend.domain.User;
@@ -44,7 +45,7 @@ public class AuthService {
 	 */
 	@Transactional
 	public UserProfileResponse signup(SignupRequest request) {
-		String handle = normalizeHandle(request.handle());
+		String handle = Handles.normalize(request.handle());
 		String email = normalizeEmail(request.email());
 
 		if (this.userRepository.existsByHandle(handle)) {
@@ -71,7 +72,7 @@ public class AuthService {
 	 */
 	@Transactional(readOnly = true)
 	public UserProfileResponse login(LoginRequest request) {
-		User user = this.userRepository.findByHandle(normalizeHandle(request.handle()))
+		User user = this.userRepository.findByNormalizedHandle(request.handle())
 			.orElseThrow(() -> new UnauthorizedException("핸들 또는 비밀번호가 올바르지 않습니다."));
 
 		if (!this.passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -81,12 +82,7 @@ public class AuthService {
 		return UserProfileResponse.of(user);
 	}
 
-	/** 핸들은 저장·조회 모두 소문자로 통일한다. (화면에서는 대소문자 구분 없이 쓸 수 있다) */
-	private static String normalizeHandle(String handle) {
-		return handle.trim().toLowerCase(Locale.ROOT);
-	}
-
-	/** 이메일도 앞뒤 공백 제거 + 소문자로 통일한다. */
+	/** 이메일도 앞뒤 공백 제거 + 소문자로 통일한다. (핸들은 {@link Handles} 참고) */
 	private static String normalizeEmail(String email) {
 		return email.trim().toLowerCase(Locale.ROOT);
 	}

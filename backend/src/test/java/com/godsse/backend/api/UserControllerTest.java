@@ -58,6 +58,16 @@ class UserControllerTest {
 	}
 
 	@Test
+	@DisplayName("프로필 조회는 핸들 대소문자를 구분하지 않는다")
+	void profileIgnoresCase() throws Exception {
+		signup("godsse");
+
+		this.mockMvc.perform(get("/api/users/Godsse"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.handle").value("godsse"));
+	}
+
+	@Test
 	@DisplayName("프로필은 받은 하트·답장 수와 활동 배지를 함께 보여 준다")
 	void profileStatsAndBadges() throws Exception {
 		MockHttpSession writer = signup("writer");
