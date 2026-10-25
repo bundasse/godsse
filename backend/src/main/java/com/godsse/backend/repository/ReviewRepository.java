@@ -89,4 +89,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 	/** 쓴 리뷰 개수(공개 범위와 무관한 전체 수). */
 	long countByAuthorId(Long authorId);
 
+	/** 이 사람이 저 사람에게 이미 감상을 썼는지(감상 요청 알림을 다시 보내지 않기 위한 확인). */
+	boolean existsByAuthorIdAndRecipientId(Long authorId, Long recipientId);
+
 }

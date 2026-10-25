@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.godsse.backend.api.dto.ReviewRequestResponse;
 import com.godsse.backend.api.dto.SessionParticipantRequest;
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
+import com.godsse.backend.api.dto.SessionStatsResponse;
 import com.godsse.backend.common.LoginUser;
 import com.godsse.backend.domain.User;
 import com.godsse.backend.service.SessionPlanService;
@@ -90,6 +92,17 @@ public class SessionPlanController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void removeParticipant(@LoginUser User user, @PathVariable Long id, @PathVariable String handle) {
 		this.sessionPlanService.removeParticipant(user, id, handle);
+	}
+
+	/**
+	 * 함께한 사람들에게 감상을 부탁하는 알림을 보낸다(소유자만). 성공하면 200.
+	 *
+	 * <p>
+	 * 이미 나에게 감상을 쓴 사람은 빠지고, 실제로 보낸 수만 돌려준다.
+	 */
+	@PostMapping("/{id}/request-reviews")
+	public ReviewRequestResponse requestReviews(@LoginUser User user, @PathVariable Long id) {
+		return new ReviewRequestResponse(this.sessionPlanService.requestReviews(user, id));
 	}
 
 }

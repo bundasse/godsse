@@ -8,11 +8,13 @@ package com.godsse.backend.domain.enums;
  * <li>{@link #LIKE} — 내가 쓴 감상에 좋아요가 달렸다.</li>
  * <li>{@link #REPLY} — 내가 쓴(또는 내가 받은) 감상에 답장이 달렸다.</li>
  * <li>{@link #FOLLOW} — 누군가 나를 팔로우했다.</li>
+ * <li>{@link #REVIEW_REQUEST} — 함께한 세션의 주최자가 감상을 부탁했다.</li>
  * </ul>
  */
 public enum NotificationType {
 	REVIEW,
 	LIKE,
 	REPLY,
-	FOLLOW
+	FOLLOW,
+	REVIEW_REQUEST
 }

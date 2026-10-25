@@ -3,6 +3,7 @@ package com.godsse.backend.service;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
+import com.godsse.backend.api.dto.SessionStatsResponse;
 import com.godsse.backend.api.dto.UserSummary;
 import com.godsse.backend.common.exception.BadRequestException;
 import com.godsse.backend.common.exception.ConflictException;
@@ -20,6 +22,8 @@ import com.godsse.backend.common.exception.NotFoundException;
 import com.godsse.backend.domain.SessionParticipant;
 import com.godsse.backend.domain.SessionPlan;
 import com.godsse.backend.domain.User;
+import com.godsse.backend.domain.enums.NotificationType;
+import com.godsse.backend.repository.ReviewRepository;
 import com.godsse.backend.repository.SessionParticipantRepository;
 import com.godsse.backend.repository.SessionPlanRepository;
 import com.godsse.backend.repository.UserRepository;
@@ -42,15 +46,24 @@ public class SessionPlanService {
 	/** 한 번에 조회할 수 있는 최대 기간(일). 실수로 전체 기간을 요청하는 것을 막는다. */
 	private static final long MAX_RANGE_DAYS = 62;
 
+	/** 통계에서 허용하는 연도 범위(오타로 엉뚱한 해를 조회하지 않게). */
+	private static final int MIN_STAT_YEAR = 2000;
+	private static final int MAX_STAT_YEAR = 2100;
+
 	private final SessionPlanRepository sessionPlanRepository;
 	private final SessionParticipantRepository sessionParticipantRepository;
 	private final UserRepository userRepository;
+	private final ReviewRepository reviewRepository;
+	private final NotificationService notificationService;
 
 	public SessionPlanService(SessionPlanRepository sessionPlanRepository,
-			SessionParticipantRepository sessionParticipantRepository, UserRepository userRepository) {
+			SessionParticipantRepository sessionParticipantRepository, UserRepository userRepository,
+			ReviewRepository reviewRepository, NotificationService notificationService) {
 		this.sessionPlanRepository = sessionPlanRepository;
 		this.sessionParticipantRepository = sessionParticipantRepository;
 		this.userRepository = userRepository;
+		this.reviewRepository = reviewRepository;
+		this.notificationService = notificationService;
 	}
 
 	/**
@@ -144,6 +157,98 @@ public class SessionPlanService {
 			.orElseThrow(() -> new NotFoundException("참가자를 찾을 수 없습니다."));
 
 		this.sessionParticipantRepository.delete(link);
+	}
+
+	/**
+	 * 함께한 사람들에게 "감상을 남겨 달라"고 알린다.
+	 *
+	 * <p>
+	 * 세션은 나만 보는 계획표라 참가자가 일정을 볼 수 없다. 그래서 알림에는 <b>보낸 사람(주최자)</b>만 담고,
+	 * 화면에서는 그 사람에게 감상을 쓰는 화면({@code /reviews/new?to=주최자})으로 이동시킨다.
+	 *
+	 * <p>
+	 * 이미 나에게 감상을 쓴 사람에게는 다시 보내지 않는다(요청이 반복될수록 알림만 쌓이므로).
+	 *
+	 * @return 실제로 알림을 보낸 사람 수
+	 * @throws BadRequestException 함께한 사람이 아무도 없을 때 (400)
+	 */
+	@Transactional
+	public int requestReviews(User loginUser, Long id) {
+		SessionPlan plan = getOwnedPlan(loginUser, id);
+		List<SessionParticipant> participants = this.sessionParticipantRepository
+			.findByPlanIdWithUser(plan.getId());
+
+		if (participants.isEmpty()) {
+			throw new BadRequestException("participants", "함께한 사람을 먼저 기록해 주세요.");
+		}
+
+		User owner = plan.getOwner();
+		int requested = 0;
+
+		for (SessionParticipant participant : participants) {
+			User target = participant.getUser();
+
+			if (this.reviewRepository.existsByAuthorIdAndRecipientId(target.getId(), owner.getId())) {
+				continue;
+			}
+
+			this.notificationService.notify(target, owner, NotificationType.REVIEW_REQUEST, null);
+			requested++;
+		}
+
+		return requested;
+	}
+
+	/**
+	 * 한 해의 세션 통계(마이페이지 카드).
+	 *
+	 * <p>
+	 * 개인 달력은 1년에 수십 건 수준이라 <b>한 번에 읽어 애플리케이션에서 집계</b>한다.
+	 * (행이 수만 건이 되면 DB 의 {@code group by} 로 옮긴다 — doc/study/11 참고)
+	 *
+	 * @throws BadRequestException 연도가 범위를 벗어났을 때 (400)
+	 */
+	public SessionStatsResponse stats(User loginUser, Integer year) {
+		int targetYear = year == null ? LocalDate.now().getYear() : year;
+		if (targetYear < MIN_STAT_YEAR || targetYear > MAX_STAT_YEAR) {
+			throw new BadRequestException("year", MIN_STAT_YEAR + "년 ~ " + MAX_STAT_YEAR + "년만 조회할 수 있습니다.");
+		}
+
+		List<SessionPlan> plans = this.sessionPlanRepository.findByOwnerIdAndPlannedDateBetweenOrderByPlannedDateAscIdAsc(
+				loginUser.getId(), LocalDate.of(targetYear, 1, 1), LocalDate.of(targetYear, 12, 31));
+
+		int[] monthly = new int[12];
+		Map<String, Integer> countByRule = new HashMap<>();
+		int planned = 0;
+		int done = 0;
+		int canceled = 0;
+		int gm = 0;
+
+		for (SessionPlan plan : plans) {
+			monthly[plan.getPlannedDate().getMonthValue() - 1]++;
+			countByRule.merge(plan.getRuleName(), 1, Integer::sum);
+
+			if (plan.isGm()) {
+				gm++;
+			}
+
+			switch (plan.getStatus()) {
+				case PLANNED -> planned++;
+				case DONE -> done++;
+				case CANCELED -> canceled++;
+			}
+		}
+
+		// 많은 순 → 같으면 이름 순(화면에서 순서가 흔들리지 않게)
+		List<SessionStatsResponse.RuleCount> rules = countByRule.entrySet()
+			.stream()
+			.sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+			.map(entry -> new SessionStatsResponse.RuleCount(entry.getKey(), entry.getValue()))
+			.toList();
+
+		List<Integer> monthlyCounts = Arrays.stream(monthly).boxed().toList();
+
+		return new SessionStatsResponse(targetYear, plans.size(), planned, done, canceled, gm, monthlyCounts, rules);
 	}
 
 	/**
