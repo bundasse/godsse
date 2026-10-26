@@ -111,3 +111,4 @@ private Page<ReviewSummary> toSummaryPage(Page<Review> page, User viewer) {
 - API 명세(좋아요·답장) → [../05-api.md](../05-api.md)
 - 도메인 모델(`review_likes`, `review_replies`) → [../07-domain-model.md](../07-domain-model.md)
 - 감상 설계와 스포일러 → [06-review-spoiler.md](./06-review-spoiler.md)
+** 여기까지 읽음 **
