@@ -110,3 +110,4 @@ int markAllRead(@Param("recipientId") Long recipientId, @Param("now") Instant no
 - API 명세(알림) → [../05-api.md](../05-api.md)
 - 도메인 모델(`notifications`) → [../07-domain-model.md](../07-domain-model.md)
 - 좋아요·답장 설계 → [08-like-and-reply.md](./08-like-and-reply.md)
+** 여기까지 읽음 **
