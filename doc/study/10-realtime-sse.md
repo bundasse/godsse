@@ -163,3 +163,4 @@ void noPushBeforeCommit() {
 
 - API 명세(알림·SSE) → [../05-api.md](../05-api.md)
 - 알림 설계 → [09-notifications.md](./09-notifications.md)
+** 여기까지 읽음 **
