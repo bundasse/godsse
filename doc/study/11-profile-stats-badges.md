@@ -104,3 +104,4 @@ public static List<String> of(long writtenReviewCount, long receivedReviewCount,
 
 - API 명세(프로필 응답·배지 코드) → [../05-api.md](../05-api.md)
 - 실시간 알림 → [10-realtime-sse.md](./10-realtime-sse.md)
+** 여기까지 읽음 **
