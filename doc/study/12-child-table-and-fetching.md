@@ -152,3 +152,4 @@ if (existsByPlanIdAndUserId(plan.getId(), participant.getId())) {
 - API 명세(참가자) → [../05-api.md](../05-api.md)
 - 도메인 모델(`session_participants`) → [../07-domain-model.md](../07-domain-model.md)
 - 집계와 계산된 값 → [11-profile-stats-badges.md](./11-profile-stats-badges.md)
+** 여기까지 읽음 **
