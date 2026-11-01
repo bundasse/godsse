@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 
-import { addSessionParticipant, removeSessionParticipant } from '@/api/sessions.js'
+import {
+  addSessionParticipant,
+  removeSessionParticipant,
+  requestSessionReviews,
+} from '@/api/sessions.js'
 
 /**
  * 세션 일정에 "함께한 사람"을 기록하는 영역.
@@ -17,6 +21,8 @@ function SessionParticipants({ plan, onChanged }) {
   const [handle, setHandle] = useState('')
   const [error, setError] = useState(null)
   const [pending, setPending] = useState(false)
+  // 감상 요청 결과 (null = 아직 보내지 않음, 0 = 보낼 사람이 없었음)
+  const [requested, setRequested] = useState(null)
 
   const participants = plan.participants ?? []
 
@@ -55,6 +61,19 @@ function SessionParticipants({ plan, onChanged }) {
     }
 
     run(() => removeSessionParticipant(plan.id, person.handle))
+  }
+
+  /** 함께한 사람들에게 감상 요청 알림을 보낸다. (이미 감상을 쓴 사람은 서버가 뺀다) */
+  const handleRequest = () => {
+    if (pending) {
+      return
+    }
+
+    setRequested(null)
+    run(async () => {
+      const result = await requestSessionReviews(plan.id)
+      setRequested(result.requestedCount)
+    })
   }
 
   return (
@@ -97,6 +116,22 @@ function SessionParticipants({ plan, onChanged }) {
           추가
         </button>
       </form>
+
+      {participants.length > 0 && (
+        <div className="form__actions">
+          <button className="button button--muted" type="button" disabled={pending} onClick={handleRequest}>
+            감상 요청 보내기
+          </button>
+        </div>
+      )}
+
+      {requested !== null && (
+        <p className="text--success">
+          {requested > 0
+            ? `${requested}명에게 감상 요청 알림을 보냈습니다.`
+            : '모두 이미 감상을 남겨서 보낼 요청이 없습니다.'}
+        </p>
+      )}
 
       {error && <p className="form__error">{error}</p>}
     </div>

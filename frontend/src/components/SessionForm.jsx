@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { DEFAULT_RULES } from '@/constants/rules.js'
+import RuleInput from '@/components/RuleInput.jsx'
 
 const STATUS_OPTIONS = [
   { value: 'PLANNED', label: '예정' },
@@ -82,19 +82,11 @@ function SessionForm({ initialValues, submitLabel, onSubmit, onCancel }) {
         <label className="form__label" htmlFor="planRule">
           룰 (필수)
         </label>
-        <input
+        <RuleInput
           id="planRule"
-          className="form__input"
-          list="plan-rule-options"
-          placeholder="예: 크툴루의 부름 7판"
           value={form.ruleName}
-          onChange={updateField('ruleName')}
+          onChange={(value) => setForm((previous) => ({ ...previous, ruleName: value }))}
         />
-        <datalist id="plan-rule-options">
-          {DEFAULT_RULES.map((rule) => (
-            <option key={rule} value={rule} />
-          ))}
-        </datalist>
         {fieldErrors.ruleName && <p className="form__error">{fieldErrors.ruleName}</p>}
       </div>
 

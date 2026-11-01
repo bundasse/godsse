@@ -14,13 +14,25 @@ const MESSAGES = {
   LIKE: '님이 감상에 좋아요를 눌렀습니다.',
   REPLY: '님이 감상에 답장을 남겼습니다.',
   FOLLOW: '님이 회원님을 팔로우했습니다.',
+  REVIEW_REQUEST: '님이 함께한 세션의 감상을 부탁했습니다.',
 }
 
-/** 알림을 누르면 갈 주소. 팔로우는 상대 프로필, 나머지는 감상으로 간다. */
-const pathOf = (notification) =>
-  notification.type === 'FOLLOW'
-    ? `/u/${notification.actor.handle}`
-    : `/reviews/${notification.reviewId}`
+/**
+ * 알림을 누르면 갈 주소.
+ *
+ * - 팔로우 → 상대 프로필
+ * - 감상 요청 → **요청한 사람에게 감상을 쓰는 화면** (세션 일정은 나만 보는 계획표라 볼 수 없다)
+ * - 나머지 → 관련 감상
+ */
+const pathOf = (notification) => {
+  if (notification.type === 'FOLLOW') {
+    return `/u/${notification.actor.handle}`
+  }
+  if (notification.type === 'REVIEW_REQUEST') {
+    return `/reviews/new?to=${notification.actor.handle}`
+  }
+  return `/reviews/${notification.reviewId}`
+}
 
 /**
  * 알림 목록 화면. (로그인 필요)

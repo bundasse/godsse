@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router'
 
 import MyCalendar from '@/components/MyCalendar.jsx'
 import ReviewList from '@/components/ReviewList.jsx'
+import SessionStats from '@/components/SessionStats.jsx'
 import { useAuth } from '@/context/auth.js'
 
 function MyPage() {
@@ -74,11 +75,17 @@ function MyPage() {
           </p>
         </div>
       ) : (
-        <div className="card">
-          <h2 className="card__title">세션 일정 달력</h2>
-          <p className="text--muted">날짜를 눌러 그 날의 일정을 확인하거나 추가하세요.</p>
-          <MyCalendar />
-        </div>
+        <>
+          <div className="card">
+            <SessionStats />
+          </div>
+
+          <div className="card">
+            <h2 className="card__title">세션 일정 달력</h2>
+            <p className="text--muted">날짜를 눌러 그 날의 일정을 확인하거나 추가하세요.</p>
+            <MyCalendar />
+          </div>
+        </>
       )}
     </section>
   )

@@ -127,6 +127,10 @@
 
 > 리뷰는 FK 가 아니라 `rule_name` 문자열을 저장합니다. 초기에는 자유 입력을 허용하고, 데이터가 쌓이면
 > 정규화(코드 참조)를 검토합니다.
+>
+> 이 테이블은 **자동완성 추천 목록**입니다(`GET /api/rules`). 서버가 처음 뜰 때 `RuleSystemSeeder` 가
+> 기본 8종(COC7·COC6·DND5E·DW·INSANE·MAGICA·SHINOBIGAMI·PHANTOM)을 넣고, 같은 `code` 가 이미 있으면
+> 건너뜁니다(멱등). 그래서 목록에 없는 룰도 여전히 자유 입력으로 저장할 수 있습니다.
 
 ### 3.7 `review_likes` — 좋아요
 
@@ -162,8 +166,8 @@
 | `id` | BIGINT | PK | |
 | `recipient_id` | BIGINT | NOT NULL, FK→users | 알림을 **받는** 사람 |
 | `actor_id` | BIGINT | NOT NULL, FK→users | 그 일을 **한** 사람 |
-| `type` | VARCHAR(20) | NOT NULL | `REVIEW`·`LIKE`·`REPLY`·`FOLLOW` |
-| `review_id` | BIGINT | FK→reviews | 관련 감상 (`FOLLOW` 는 NULL) |
+| `type` | VARCHAR(20) | NOT NULL | `REVIEW`·`LIKE`·`REPLY`·`FOLLOW`·`REVIEW_REQUEST` |
+| `review_id` | BIGINT | FK→reviews | 관련 감상 (`FOLLOW`·`REVIEW_REQUEST` 는 NULL) |
 | `read_at` | TIMESTAMP | | 읽은 시각. **NULL 이면 안 읽음** |
 | `created_at` | TIMESTAMP | NOT NULL | |
 
@@ -172,6 +176,11 @@
 > 사용자를 **두 번** 참조합니다(받는 사람 / 행동한 사람). "알림 한 줄 = 누가 누구에게 무슨 일"이라는
 > 최소 단위로 두면, 종류가 늘어나도 테이블을 바꾸지 않아도 됩니다.
 > 읽음 여부는 boolean 대신 **`read_at`(시각)** 으로 두어 "언제 읽었는지"까지 남깁니다(NULL 이면 안 읽음).
+>
+> `type` 은 **문자열 컬럼에 고정**했습니다(`@Column(columnDefinition = "varchar(20)")`). H2 의 네이티브
+> `ENUM('…')` 으로 만들면 값 목록이 DB 에 박혀 `ddl-auto=update` 가 갱신하지 못하는데, 알림 종류는
+> 기능이 늘 때마다 추가되므로(예: `REVIEW_REQUEST`) 매번 스키마를 손보게 되기 때문입니다.
+> `REVIEW_REQUEST` 는 "일정 소유자가 함께한 사람에게 감상을 부탁했다"는 뜻이고, 관련 감상이 없어 `review_id` 가 NULL 입니다.
 
 ### 3.10 `session_participants` — 함께한 사람
 

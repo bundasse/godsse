@@ -14,7 +14,8 @@ com.godsse.backend
 │  ├─ FollowController.java        # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  ├─ NotificationController.java   # 알림 목록·안 읽은 개수·읽음 처리
 │  ├─ ReviewController.java        # 감상 작성·목록·전문·수정·삭제
-│  ├─ SessionPlanController.java   # 세션 일정(달력) 작성·조회·수정·삭제
+│  ├─ SessionPlanController.java   # 세션 일정(달력) 작성·조회·수정·삭제 + 감상 요청·연간 통계
+│  ├─ RuleController.java          # 룰 목록(자동완성용, 공개)
 │  ├─ ApiExceptionHandler.java     # @RestControllerAdvice (예외 → JSON)
 │  └─ dto/                         # 요청/응답 스키마 (record)
 │     ├─ HelloResponse.java
@@ -34,6 +35,10 @@ com.godsse.backend
 │     ├─ ReviewSummary.java
 │     ├─ SessionPlanRequest.java
 │     ├─ SessionPlanResponse.java
+│     ├─ SessionParticipantRequest.java
+│     ├─ ReviewRequestResponse.java
+│     ├─ SessionStatsResponse.java
+│     ├─ RuleResponse.java
 │     └─ PageResponse.java
 ├─ service/                        # 비즈니스 로직 + 트랜잭션 경계
 │  ├─ AuthService.java             # 회원가입·로그인 (중복 확인, BCrypt)
@@ -41,7 +46,8 @@ com.godsse.backend
 │  ├─ FollowService.java           # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  ├─ NotificationService.java     # 알림 만들기·조회·읽음 처리
 │  ├─ ReviewService.java           # 감상 작성·조회·수정·삭제 + 공개 범위 판단
-│  ├─ SessionPlanService.java      # 세션 일정(달력) + 기간 조회
+│  ├─ SessionPlanService.java      # 세션 일정(달력) + 기간 조회 + 감상 요청 + 연간 통계
+│  ├─ RuleService.java             # 룰 목록 조회(자동완성용)
 │  └─ FileStorageService.java      # 업로드 파일 저장·검증·삭제 (UUID 이름)
 ├─ common/                         # 공통 상수·인증 보조
 │  ├─ SessionKeys.java             # 세션 키 상수
@@ -64,7 +70,8 @@ com.godsse.backend
 │  └─ enums/
 │     ├─ SpoilerMode.java          # NONE / BLUR / FOLD
 │     ├─ Visibility.java           # PUBLIC / FOLLOWERS / PRIVATE
-│     └─ SessionStatus.java        # PLANNED / DONE / CANCELED
+│     ├─ SessionStatus.java        # PLANNED / DONE / CANCELED
+│     └─ NotificationType.java     # REVIEW / LIKE / REPLY / FOLLOW / REVIEW_REQUEST
 ├─ repository/                     # DB 접근 (Spring Data JPA 인터페이스)
 │  ├─ UserRepository.java
 │  ├─ FollowRepository.java
@@ -79,7 +86,8 @@ com.godsse.backend
    ├─ CorsConfig.java              # WebMvcConfigurer 로 /api/** CORS 설정
    ├─ WebConfig.java               # /uploads/** 를 업로드 폴더와 연결
    ├─ UploadConfig.java            # 업로드 폴더(Path) 빈 등록 + 폴더 생성
-   └─ PasswordConfig.java          # BCrypt PasswordEncoder 빈 등록
+   ├─ PasswordConfig.java          # BCrypt PasswordEncoder 빈 등록
+   └─ RuleSystemSeeder.java        # 룰 기본 8종을 시작 시 채운다(멱등)
 ```
 
 - **계층 규칙**: 요청을 받는 `api` → 로직을 담는 `service` → DB 를 다루는 `repository` → 테이블과 대응하는 `domain`.
@@ -139,6 +147,11 @@ com.godsse.backend
 | `service/NotificationPushListener` | **커밋 이후**에만 개수 변경을 스트림으로 전달(`@TransactionalEventListener`) |
 | `service/NotificationCountChangedEvent` | "개수가 바뀌었다"는 사건(받는 사람 id + 커밋 시점 개수) |
 | `api/NotificationController` | `/api/notifications/**` — 목록·안 읽은 개수·읽음 |
+| `service/SessionPlanService`(확장) | **감상 요청** 알림(이미 감상을 쓴 사람 제외), **연간 통계** 계산(저장하지 않고 매번 셈) |
+| `service/RuleService` | `/api/rules` — 활성 룰 목록(정렬 순서대로) |
+| `api/RuleController` | 룰 목록. **로그인이 필요 없다**(참조 데이터) |
+| `domain/RuleSystem` | 룰(약어·이름·정렬 순서·사용 여부). 감상·일정은 이 테이블을 FK 로 잡지 않고 **이름만 문자열로** 저장 |
+| `config/RuleSystemSeeder` | 시작 시 기본 룰 8종 채우기. 약어가 이미 있으면 건너뛴다(멱등 — 고친 이름을 되돌리지 않음) |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -228,6 +241,12 @@ public class HelloController {
   - 사용자: `sa`, 비밀번호: (빈 값)
 - 테이블 구조: [07-domain-model.md](./07-domain-model.md)
 - 운영 전환 시에는 `ddl-auto` 를 `validate` 로 바꾸고 PostgreSQL 등으로 옮기는 것을 검토합니다.
+
+> **enum 을 새로 추가할 때 주의**: Hibernate 는 H2 에 enum 컬럼을 네이티브 `ENUM('A','B')` 타입으로 만들 수 있는데,
+> `ddl-auto=update` 는 **이미 만들어진 값 목록을 바꿔 주지 않습니다**. 그러면 새 값(예: `REVIEW_REQUEST`)을
+> 저장하는 순간 500 이 납니다(테스트는 `create-drop` 이라 새 스키마를 만들어 통과하므로 놓치기 쉽습니다).
+> 그래서 `Notification.type` 은 `@Column(columnDefinition = "varchar(20)")` 로 **문자열 컬럼에 고정**했습니다.
+> 이미 만들어진 개발 DB 는 `ALTER TABLE notifications ALTER COLUMN type SET DATA TYPE VARCHAR(20);` 로 한 번 바꿔 주면 됩니다.
 
 ## 6. 테스트
 

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 
+import RuleInput from '@/components/RuleInput.jsx'
 import SpoilerText from '@/components/SpoilerText.jsx'
-import { DEFAULT_RULES } from '@/constants/rules.js'
 import { FOLD_MARKER, SPOILER_MODES, VISIBILITIES } from '@/constants/spoilerMarkers.js'
 import { REVIEW_TAGS } from '@/constants/tags.js'
 
@@ -144,19 +144,11 @@ function ReviewForm({ initialValues, recipient, submitLabel, onSubmit }) {
         <label className="form__label" htmlFor="ruleName">
           룰 (필수)
         </label>
-        <input
+        <RuleInput
           id="ruleName"
-          className="form__input"
-          list="rule-options"
-          placeholder="예: 크툴루의 부름 7판"
           value={form.ruleName}
-          onChange={updateField('ruleName')}
+          onChange={(value) => setForm((previous) => ({ ...previous, ruleName: value }))}
         />
-        <datalist id="rule-options">
-          {DEFAULT_RULES.map((rule) => (
-            <option key={rule} value={rule} />
-          ))}
-        </datalist>
         {fieldErrors.ruleName && <p className="form__error">{fieldErrors.ruleName}</p>}
       </div>
 

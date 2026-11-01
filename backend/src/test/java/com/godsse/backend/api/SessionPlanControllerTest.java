@@ -280,6 +280,124 @@ class SessionPlanControllerTest {
 			.andExpect(jsonPath("$[0].participants[0].handle").value("partner"));
 	}
 
+	@Test
+	@DisplayName("감상 요청은 참가자에게만 알림을 보내고, 이미 감상을 쓴 사람은 건너뛴다")
+	void requestReviewsNotifiesParticipants() throws Exception {
+		MockHttpSession owner = signup("planner");
+		MockHttpSession partner = signup("partner");
+		MockHttpSession late = signup("latecomer");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+		addParticipant(owner, id, "partner");
+		addParticipant(owner, id, "latecomer");
+
+		// partner 는 이미 주최자에게 감상을 남겼다 → 요청 대상에서 빠진다.
+		writeReview(partner, "planner");
+
+		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(owner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.requestedCount").value(1));
+
+		this.mockMvc.perform(get("/api/notifications").session(late))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(1))
+			.andExpect(jsonPath("$.items[0].type").value("REVIEW_REQUEST"))
+			.andExpect(jsonPath("$.items[0].actor.handle").value("planner"));
+
+		// 이미 감상을 쓴 partner 에게는 요청 알림이 가지 않는다.
+		this.mockMvc.perform(get("/api/notifications").session(partner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(0));
+	}
+
+	@Test
+	@DisplayName("함께한 사람이 없으면 감상 요청은 400 이다")
+	void requestReviewsWithoutParticipants() throws Exception {
+		MockHttpSession owner = signup("planner");
+		long id = createPlan(owner, "혼자 한 세션", "2026-10-20");
+
+		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(owner))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("participants"));
+	}
+
+	@Test
+	@DisplayName("남의 일정에는 감상 요청을 보낼 수 없다")
+	void requestReviewsOnOthersPlan() throws Exception {
+		MockHttpSession owner = signup("planner");
+		MockHttpSession other = signup("partner");
+		signup("latecomer");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+		addParticipant(owner, id, "latecomer");
+
+		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(other))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("감상 요청 API 도 로그인이 필요하다")
+	void requestReviewsRequiresLogin() throws Exception {
+		this.mockMvc.perform(post("/api/sessions/1/request-reviews")).andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	@DisplayName("연간 통계는 월별 횟수·상태·GM·룰 분포를 센다")
+	void statsCountsYear() throws Exception {
+		MockHttpSession session = signup("planner");
+		long first = createPlan(session, "10월 첫 세션", "2026-10-05");
+		createPlan(session, "10월 두 번째 세션", "2026-10-19");
+		createPlan(session, "12월 세션", "2026-12-24");
+
+		// 첫 세션만 완료 + GM 으로 바꿔 상태·GM 집계를 확인한다.
+		patchPlan(session, first, "{\"title\":\"10월 첫 세션\",\"plannedDate\":\"2026-10-05\","
+				+ "\"ruleName\":\"던전월드\",\"gm\":true,\"status\":\"DONE\"}");
+
+		this.mockMvc.perform(get("/api/sessions/stats").session(session).param("year", "2026"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.year").value(2026))
+			.andExpect(jsonPath("$.totalCount").value(3))
+			.andExpect(jsonPath("$.plannedCount").value(2))
+			.andExpect(jsonPath("$.doneCount").value(1))
+			.andExpect(jsonPath("$.canceledCount").value(0))
+			.andExpect(jsonPath("$.gmCount").value(1))
+			.andExpect(jsonPath("$.monthlyCounts.length()").value(12))
+			.andExpect(jsonPath("$.monthlyCounts[9]").value(2))
+			.andExpect(jsonPath("$.monthlyCounts[11]").value(1))
+			.andExpect(jsonPath("$.rules[0].ruleName").value("던전월드"))
+			.andExpect(jsonPath("$.rules[0].count").value(3));
+	}
+
+	@Test
+	@DisplayName("통계 연도가 범위를 벗어나면 400 이다")
+	void statsRejectsOutOfRangeYear() throws Exception {
+		MockHttpSession session = signup("planner");
+
+		this.mockMvc.perform(get("/api/sessions/stats").session(session).param("year", "1999"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("year"));
+	}
+
+	@Test
+	@DisplayName("통계 API 도 로그인이 필요하다")
+	void statsRequiresLogin() throws Exception {
+		this.mockMvc.perform(get("/api/sessions/stats")).andExpect(status().isUnauthorized());
+	}
+
+	/** 참가자(작성자)가 주최자에게 감상을 쓴다 — 요청 알림에서 빠지는지 확인하는 데 쓴다. */
+	private void writeReview(MockHttpSession session, String toHandle) throws Exception {
+		this.mockMvc
+			.perform(post("/api/reviews").session(session).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"toHandle\":\"" + toHandle + "\",\"playedOn\":\"2026-10-01\","
+						+ "\"ruleName\":\"던전월드\",\"body\":\"" + "가".repeat(120) + "\"}"))
+			.andExpect(status().isCreated());
+	}
+
+	private void patchPlan(MockHttpSession session, long id, String body) throws Exception {
+		this.mockMvc
+			.perform(patch("/api/sessions/" + id).session(session).contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isOk());
+	}
+
 	private void addParticipant(MockHttpSession owner, long id, String handle) throws Exception {
 		this.mockMvc
 			.perform(post("/api/sessions/" + id + "/participants").session(owner)

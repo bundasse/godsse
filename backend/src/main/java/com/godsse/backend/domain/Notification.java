@@ -47,8 +47,17 @@ public class Notification extends BaseTimeEntity {
 	@JoinColumn(name = "actor_id", nullable = false)
 	private User actor;
 
+	/**
+	 * 알림 종류.
+	 *
+	 * <p>
+	 * <b>DB 에는 {@code varchar} 로 저장한다.</b> 종류는 기능이 늘 때마다 추가되는데(예: {@code REVIEW_REQUEST}),
+	 * Hibernate 가 H2 의 네이티브 {@code enum} 타입으로 컬럼을 만들면 값 목록이 DB 에 고정되어
+	 * {@code ddl-auto=update} 가 이를 바꿔 주지 못한다. 그러면 새 종류를 저장하는 순간 500 이 난다.
+	 * 그래서 컬럼 정의를 직접 {@code varchar(20)} 으로 고정해, 종류를 추가해도 스키마 변경이 필요 없게 한다.
+	 */
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 20)
+	@Column(nullable = false, length = 20, columnDefinition = "varchar(20)")
 	private NotificationType type;
 
 	/** 관련 감상. FOLLOW 알림은 null. */

@@ -126,6 +126,7 @@ cd backend
 | PowerShell 에서 `curl.exe -d '{...}'` 본문이 깨져 400 (JSON parse error) | PowerShell 이 따옴표를 벗겨 전달함 | 본문을 UTF-8 파일로 저장하고 `--data-binary "@파일"` 로 보낸다 ([05-api.md](./05-api.md) 2.5 참고) |
 | PowerShell 로 한글 JSON 응답을 파싱하면 `ConvertFrom-Json` 오류 | `Get-Content` 가 UTF-8 을 기본 인코딩(CP949)으로 읽어 한글 바이트가 인용부호를 삼킴 | `Get-Content -Raw -Encoding UTF8` 로 읽는다 |
 | 선택 항목(`gm` 같은 boolean)을 생략해 보내니 400 `요청 본문을 읽을 수 없습니다` | Jackson 이 record 의 **primitive 필드**를 채우지 못함 | 요청 DTO 의 primitive 를 `Boolean`(래퍼)으로 바꾸고 서비스에서 기본값을 정한다 |
+| 새 알림 종류(예: `REVIEW_REQUEST`)를 저장할 때만 500, 테스트는 통과 | 기존 H2 파일의 `notifications.type` 이 네이티브 `ENUM('FOLLOW',…)` 이라 값 목록이 고정됨(`ddl-auto=update` 는 못 바꿈) | `ALTER TABLE notifications ALTER COLUMN type SET DATA TYPE VARCHAR(20);` 로 한 번 바꾼다(엔티티는 이미 `columnDefinition = "varchar(20)"`). 새 DB 는 영향 없음 |
 
 
 
@@ -219,6 +220,12 @@ cd backend
 | 2026-10-22 | Before: 가입·로그인만 소문자로 바꾸고 조회는 그대로 비교해 `/api/users/Godsse`·`toHandle: "Partner"` 가 404 |
 | 2026-10-22 | After: 저장은 소문자, 조회는 대소문자·앞뒤 공백 무시(5개 진입점 동일 규칙). `AuthService` 의 중복 정규화 코드 제거 |
 | 2026-10-22 | 검증: 백엔드 테스트 **97건 통과**, 핸들 E2E(가입 201 → 대문자 프로필/로그인 200 → 대문자 `toHandle` 201 → 대소문자 팔로우/참가자 204 → 없는 핸들 404) |
+| 2026-11-01 | **감상 요청 알림** — `POST /api/sessions/{id}/request-reviews`(소유자만) + `NotificationType.REVIEW_REQUEST`. 이미 나에게 감상을 쓴 사람은 빼고 보내고, 응답의 `requestedCount` 가 실제 발송 수 |
+| 2026-11-01 | 프론트 — `SessionParticipants` 에 "감상 요청 보내기", 알림 목록에서 `REVIEW_REQUEST` 는 `/reviews/new?to=핸들` 로 이동(일정은 나만 보는 계획표라 볼 수 없음) |
+| 2026-11-01 | **연간 세션 통계** — `GET /api/sessions/stats?year=`(월별 12칸·상태·GM·룰별, 저장하지 않고 매번 계산), 마이페이지 카드(`SessionStats`)에 월별 막대 + 룰별 분포 |
+| 2026-11-01 | **룰 자동완성** — `GET /api/rules`(공개), `RuleSystemSeeder`(기본 8종·멱등), 프론트 `api/rules.js`(한 번 받은 목록 재사용) + `RuleInput`(약어 `coc` 로도 검색, 자유 입력 허용) |
+| 2026-11-01 | **enum 컬럼 함정 수정** — 기존 H2 DB 의 `notifications.type` 이 네이티브 `ENUM` 이라 새 종류 저장 시에만 500(테스트는 create-drop 이라 통과). `columnDefinition = "varchar(20)"` 로 고정 + 기존 DB 컬럼 변환 |
+| 2026-11-01 | 검증: 백엔드 테스트 **106건 통과**, 프론트 lint·빌드(73 modules), 실서버 E2E(감상 요청 200 → `REVIEW_REQUEST` 알림 2건 → 통계 200 → 남의 일정 403 → 삭제 204) |
 
 
 
@@ -231,6 +238,7 @@ cd backend
 - [ ] 인증 인터셉터 + 로그인 사용자 주입(`@LoginUser`) 추가
 - [ ] 예외 응답 확장(401/403/404/409) + 공통 예외 클래스
 - [ ] 세션 로그인 보안 강화 — HttpOnly·SameSite 쿠키, 로그인 시 세션 ID 재발급
+- [x] 세션 참가자·감상 요청·연간 통계, 룰 자동완성 — 2026-11-01 완료
 - [ ] 배포 준비 — DB 이전(PostgreSQL 등), `ddl-auto=validate`, 백업, HTTPS
 
 

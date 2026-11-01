@@ -98,12 +98,54 @@ int markAllRead(@Param("recipientId") Long recipientId, @Param("now") Instant no
 
 - 남의 알림 id 로 읽음 처리하면 **403 이 아니라 404** 를 줍니다. (남의 알림이 존재하는지조차 알려 주지 않는다)
 
-## 7. 확인 문제
+## 7. 알림 종류를 늘릴 때 — 감상 요청(`REVIEW_REQUEST`)
+
+"세션을 마쳤으니 감상을 남겨 달라"고 **일정 소유자가 함께한 사람에게** 보내는 알림을 추가했습니다.
+
+- 만드는 곳: `SessionPlanService.requestReviews` (요청 API 는 소유자만 호출)
+- 받는 사람: 그 일정의 **참가자**
+- **이미 나에게 감상을 쓴 사람은 뺍니다** — 이미 쓴 사람에게 "써 주세요"는 알림이 아니라 잔소리입니다.
+  응답의 `requestedCount` 는 "실제로 보낸 사람 수"라, 0 이면 화면이 "모두 남겼습니다"로 안내할 수 있습니다.
+- 관련 감상이 없으므로 `reviewId` 는 `null` 입니다. 그래서 화면의 이동 규칙이 종류마다 달라집니다.
+
+```js
+// NotificationsPage.jsx — 종류별로 갈 곳이 다르다
+if (type === 'FOLLOW') return `/u/${actor.handle}`        // 상대 프로필
+if (type === 'REVIEW_REQUEST') return `/reviews/new?to=${actor.handle}`  // 상대에게 쓰는 화면
+return `/reviews/${reviewId}`                              // 나머지는 관련 감상
+```
+
+> **왜 "그 일정으로" 가지 않을까?** 세션 일정은 **나만 보는 계획표**입니다(소유자만 조회 가능).
+> 요청받은 사람이 그 일정을 열 수는 없으니, 알림은 "누구에게 쓰면 되는지"까지만 알려 주고
+> 감상 작성 화면으로 보냅니다. 알림 한 줄에 **다른 도메인의 화면으로 보낼 수 있는 최소 정보**(`actor`)만 담는 이유입니다.
+
+### 함정: enum 타입 컬럼
+
+`NotificationType` 에 `REVIEW_REQUEST` 를 추가했더니 **테스트는 통과하는데 실서버에서만 500** 이 났습니다.
+
+- 테스트는 `create-drop` 이라 스키마를 새로 만들고, 그때는 `REVIEW_REQUEST` 도 포함된 `ENUM(...)` 이 만들어집니다.
+- 개발 DB(파일 H2)는 **예전에 만들어진 컬럼**을 그대로 씁니다. Hibernate 의 `ddl-auto=update` 는
+  **이미 있는 컬럼의 타입(값 목록)을 바꾸지 않습니다.** 그래서 새 값만 저장이 거부됩니다.
+
+해결: 알림 종류처럼 **값이 계속 늘어나는 컬럼**은 DB enum 에 맡기지 않고 문자열로 고정합니다.
+
+```java
+@Enumerated(EnumType.STRING)
+@Column(nullable = false, length = 20, columnDefinition = "varchar(20)")
+private NotificationType type;
+```
+
+이미 만들어진 DB 는 한 번만 바꿔 주면 됩니다.
+`ALTER TABLE notifications ALTER COLUMN type SET DATA TYPE VARCHAR(20);`
+
+## 8. 확인 문제
 
 1. 알림 테이블에서 `read_at` 대신 `is_read` boolean 을 써도 될까요? 무엇이 달라질까요?
 2. 좋아요 취소 시 알림을 지우지 않으면 어떤 문제가 생길까요?
 3. 답장 알림을 감상 작성자에게만 보내는 것과, 받은 사람에게도 보내는 것의 차이는 무엇일까요?
 4. 헤더 배지를 30초마다 폴링하는 방식과 화면 이동 때 조회하는 방식의 장단점은?
+5. 감상 요청 알림에서 **이미 감상을 쓴 사람을 빼는** 판단은 어디에 두는 게 좋을까요? (컨트롤러/서비스/DB)
+6. enum 값을 하나 추가했을 때 "테스트는 통과하는데 실서버에서만 실패"하는 상황을 미리 잡으려면 무엇을 확인해야 할까요?
 
 ## 관련 문서
 

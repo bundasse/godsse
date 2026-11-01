@@ -105,4 +105,16 @@ public class SessionPlanController {
 		return new ReviewRequestResponse(this.sessionPlanService.requestReviews(user, id));
 	}
 
+	/**
+	 * 한 해의 세션 통계(마이페이지 카드). 예: {@code GET /api/sessions/stats?year=2026}
+	 *
+	 * <p>
+	 * {@code year} 를 생략하면 올해를 센다.
+	 */
+	@GetMapping("/stats")
+	public SessionStatsResponse stats(@LoginUser User user,
+			@RequestParam(name = "year", required = false) Integer year) {
+		return this.sessionPlanService.stats(user, year);
+	}
+
 }

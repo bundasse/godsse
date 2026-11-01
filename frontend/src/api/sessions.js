@@ -28,3 +28,14 @@ export const addSessionParticipant = (id, handle) =>
 /** 일정에서 참가자 제거. 성공하면 204. */
 export const removeSessionParticipant = (id, handle) =>
   apiClient.delete(`/api/sessions/${id}/participants/${encodeURIComponent(handle)}`)
+
+/**
+ * 함께한 사람들에게 감상을 부탁하는 알림을 보낸다(소유자만). 성공하면 200.
+ *
+ * 이미 나에게 감상을 쓴 사람은 서버가 빼고 보내므로, 응답의 `requestedCount` 가 실제로 보낸 수다.
+ */
+export const requestSessionReviews = (id) => apiClient.post(`/api/sessions/${id}/request-reviews`)
+
+/** 한 해의 세션 통계. `year` 를 생략하면 올해. */
+export const fetchSessionStats = (year) =>
+  apiClient.get(year ? `/api/sessions/stats?year=${year}` : '/api/sessions/stats')

@@ -11,7 +11,7 @@
 | `src/App.jsx` | **라우트 표**. 어떤 URL 에 어떤 페이지를 보여 줄지 정의 |
 | `src/layouts/AppLayout.jsx` | 공통 뼈대(헤더 + 본문 + 모바일 하단 탭), `<Outlet />` 자리에 페이지가 들어감 |
 | `src/layouts/AppLayout.css` | 헤더/하단 탭/본문 폭, 반응형 규칙 |
-| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute, Avatar, UserCard, FollowButton, SpoilerText, ReviewCard, ReviewList, ReviewForm, ShareButton, MyCalendar, SessionForm, LikeButton, ReviewReplies, NotificationBell) |
+| `src/components/` | 재사용 컴포넌트 (Header, NavBar, PagePlaceholder, ProtectedRoute, Avatar, UserCard, FollowButton, SpoilerText, ReviewCard, ReviewList, ReviewForm, ShareButton, MyCalendar, SessionForm, SessionStats, RuleInput, LikeButton, ReviewReplies, NotificationBell) |
 | `src/context/auth.js` | 로그인 상태 컨텍스트 정의 + `useAuth()` 훅 |
 | `src/context/AuthProvider.jsx` | 로그인 상태를 앱에 공급(시작 시 `/api/auth/me` 로 복원) |
 | `src/pages/` | 화면 단위 컴포넌트 (라우트 1개 = 파일 1개) |
@@ -20,10 +20,13 @@
 | `src/api/auth.js` | 회원가입·로그인·로그아웃·내 정보 API 함수 |
 | `src/api/users.js` | 프로필 조회·편집, 이미지 업로드, 유저 검색, 팔로우·팔로워/팔로잉 목록 API 함수 |
 | `src/api/reviews.js` | 감상 작성·조회·목록·수정·삭제, 좋아요·답장 API 함수 |
-| `src/api/sessions.js` | 세션 일정(달력) 기간 조회·작성·수정·삭제 + **참가자 추가·삭제** API 함수 |
+| `src/api/sessions.js` | 세션 일정(달력) 기간 조회·작성·수정·삭제 + **참가자 추가·삭제**, **감상 요청**, **연간 통계** API 함수 |
+| `src/api/rules.js` | 룰 목록 조회 + **한 번 받은 목록을 기억**(폼을 열 때마다 왕복하지 않음) |
 | `src/api/notifications.js` | 알림 목록·안 읽은 개수·읽음 처리·실시간 구독 주소(SSE) API 함수 |
-| `src/constants/` | 태그·룰·스포일러 마커·프로필 배지처럼 화면과 서버가 공유하는 상수 |
-| `src/components/SessionParticipants.jsx` | 세션 일정의 **함께한 사람** 기록(추가·삭제, 프로필·감상 작성 링크) |
+| `src/constants/` | 태그·룰·스포일러 마커·프로필 배지처럼 화면과 서버가 공유하는 상수 (`rules.js` 는 서버 목록이 없을 때 쓰는 **기본 룰**) |
+| `src/components/SessionParticipants.jsx` | 세션 일정의 **함께한 사람** 기록(추가·삭제, 프로필·감상 작성 링크) + **감상 요청 보내기** |
+| `src/components/SessionStats.jsx` | 마이페이지 연간 통계(월별 막대·상태·GM·룰별 횟수, 해 이동) |
+| `src/components/RuleInput.jsx` | 룰 입력칸(감상·일정 폼 공용) — **약어(`coc`)로도 찾는 자동완성**, 자유 입력 허용 |
 | `src/App.css` | 페이지/카드/폼/버튼 등 공용 클래스 |
 | `src/index.css` | CSS 변수(색상·치수)·기본 리셋·폰트 |
 | `vite.config.js` | 플러그인, `@` 별칭, 포트(5173), `/api` 프록시 |
@@ -105,6 +108,8 @@ fetch(`${BASE_URL}${path}`, { headers: { 'Content-Type': 'application/json', ...
 - `response.ok === false` 이면 `data.message` 로 `Error` 를 던집니다 → 호출부 `catch` 에서 화면 표시.
 - `BASE_URL` 이 비어 있으면 상대 경로(`/api/...`)로 호출되며, Vite 프록시를 타고 백엔드로 전달됩니다.
 - 백엔드를 직접 호출하려면 `frontend/.env.local` 에 `VITE_API_BASE_URL=http://localhost:8080` 지정(이 경우 백엔드 CORS 설정 필요).
+- `src/api/rules.js` 는 한 번 받은 룰 목록을 **기억**합니다(감상·일정 폼을 열 때마다 왕복하지 않도록).
+  실패하면 기억하지 않고 다음 호출에서 다시 시도하며, 그동안 화면은 `constants/rules.js` 의 기본 목록으로 동작합니다.
 
 ## 5. Vite 설정 (`vite.config.js`)
 
