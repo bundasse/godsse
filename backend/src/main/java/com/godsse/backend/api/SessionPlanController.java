@@ -102,7 +102,7 @@ public class SessionPlanController {
 	 */
 	@PostMapping("/{id}/request-reviews")
 	public ReviewRequestResponse requestReviews(@LoginUser User user, @PathVariable Long id) {
-		return new ReviewRequestResponse(this.sessionPlanService.requestReviews(user, id));
+		return this.sessionPlanService.requestReviews(user, id);
 	}
 
 	/**

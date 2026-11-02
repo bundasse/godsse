@@ -142,12 +142,12 @@ com.godsse.backend
 | `domain/ReviewLike`·`ReviewReply` | 좋아요·답장(리뷰 아래 자식 테이블) |
 | `service/ReviewService`(확장) | 좋아요·답장, 좋아요 수·내 좋아요 여부 매핑 |
 | `domain/Notification` | 알림(받는 사람·행동한 사람·종류·관련 감상·읽은 시각) |
-| `service/NotificationService` | 알림 만들기(자기 행동 제외)·목록·읽음 처리 |
+| `service/NotificationService` | 알림 만들기(자기 행동 제외)·목록·읽음 처리, **안 읽은 요청은 다시 만들지 않는** `notifyUnlessPending`(감상 요청 중복 방지) |
 | `service/NotificationStream` | 사용자별 SSE 연결 보관·전송(끊긴 연결 정리 포함) |
 | `service/NotificationPushListener` | **커밋 이후**에만 개수 변경을 스트림으로 전달(`@TransactionalEventListener`) |
 | `service/NotificationCountChangedEvent` | "개수가 바뀌었다"는 사건(받는 사람 id + 커밋 시점 개수) |
 | `api/NotificationController` | `/api/notifications/**` — 목록·안 읽은 개수·읽음 |
-| `service/SessionPlanService`(확장) | **감상 요청** 알림(이미 감상을 쓴 사람 제외), **연간 통계** 계산(저장하지 않고 매번 셈) |
+| `service/SessionPlanService`(확장) | **감상 요청** 알림(이미 감상을 쓴 사람·아직 읽지 않은 요청은 제외), **연간 통계** 계산(저장하지 않고 매번 셈) |
 | `service/RuleService` | `/api/rules` — 활성 룰 목록(정렬 순서대로) |
 | `api/RuleController` | 룰 목록. **로그인이 필요 없다**(참조 데이터) |
 | `domain/RuleSystem` | 룰(약어·이름·정렬 순서·사용 여부). 감상·일정은 이 테이블을 FK 로 잡지 않고 **이름만 문자열로** 저장 |

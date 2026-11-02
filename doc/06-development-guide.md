@@ -226,20 +226,27 @@ cd backend
 | 2026-11-01 | **룰 자동완성** — `GET /api/rules`(공개), `RuleSystemSeeder`(기본 8종·멱등), 프론트 `api/rules.js`(한 번 받은 목록 재사용) + `RuleInput`(약어 `coc` 로도 검색, 자유 입력 허용) |
 | 2026-11-01 | **enum 컬럼 함정 수정** — 기존 H2 DB 의 `notifications.type` 이 네이티브 `ENUM` 이라 새 종류 저장 시에만 500(테스트는 create-drop 이라 통과). `columnDefinition = "varchar(20)"` 로 고정 + 기존 DB 컬럼 변환 |
 | 2026-11-01 | 검증: 백엔드 테스트 **106건 통과**, 프론트 lint·빌드(73 modules), 실서버 E2E(감상 요청 200 → `REVIEW_REQUEST` 알림 2건 → 통계 200 → 남의 일정 403 → 삭제 204) |
+| 2026-11-02 | **감상 요청 중복 방지** — `NotificationService.notifyUnlessPending`(같은 사람의 **안 읽은** 요청이 있으면 새로 만들지 않음). 응답에 `alreadyReviewedCount`·`alreadyRequestedCount` 추가 |
+| 2026-11-02 | 화면은 세 숫자로 나눠 안내(보냄/이미 감상을 씀/아직 안 읽음). 읽은 뒤에는 다시 보낼 수 있어 독촉은 유지 |
+| 2026-11-02 | 검증: 백엔드 테스트 **107건 통과**, 감상 요청 E2E(1회차 1명 → 2회차 0명·`alreadyRequestedCount` 1 → 읽음 처리 → 3회차 1명) |
+| 2026-11-02 | 문서 정리: `01-overview`(구조·검증 상태), `doc/README`(30초 요약), `study/README`(색인) 최신화, §7 TODO 중 이미 끝난 항목 정리 |
 
 
 
 ## 7. 남은 작업 (TODO)
 
-- [ ] JDK 17 설치 후 `.\mvnw.cmd test` 로 백엔드 컴파일/테스트 검증 (현재 미검증)
-- [ ] 필요 시 `git init` 후 첫 커밋 (`.gitignore`/`.gitattributes` 는 준비됨)
+- [x] 백엔드 컴파일/테스트 검증 — 2026-11-02 **107건 통과** (`.\mvnw.cmd test`)
+- [x] `git init` + 커밋 — 완료 (`main` 브랜치)
 - [x] DB(JPA)·라우팅(react-router) 도입 — 2026-09-24 완료
-- [ ] `service` 계층 정리 — 다음 단계(1-1 인증)에서 함께 도입
-- [ ] 인증 인터셉터 + 로그인 사용자 주입(`@LoginUser`) 추가
-- [ ] 예외 응답 확장(401/403/404/409) + 공통 예외 클래스
-- [ ] 세션 로그인 보안 강화 — HttpOnly·SameSite 쿠키, 로그인 시 세션 ID 재발급
+- [x] `service` 계층 도입 — `AuthService` … `SessionPlanService` 8개 (컨트롤러는 서비스만 호출)
+- [x] 로그인 사용자 주입 — `@LoginUser` + `LoginUserArgumentResolver`
+- [x] 예외 응답 확장 — `common/exception` 5종 + `ApiExceptionHandler`(400/401/403/404/409)
+- [x] 세션 로그인 보안 — `http-only`·`same-site=lax`·`changeSessionId()`(세션 고정 방지)
 - [x] 세션 참가자·감상 요청·연간 통계, 룰 자동완성 — 2026-11-01 완료
-- [ ] 배포 준비 — DB 이전(PostgreSQL 등), `ddl-auto=validate`, 백업, HTTPS
+- [x] 감상 요청 중복 방지(안 읽은 요청은 다시 만들지 않음) — 2026-11-02 완료
+- [ ] 프론트엔드 테스트 도입 — 현재 0건(`vitest` + Testing Library 후보)
+- [ ] 감상 검색·필터 — 지금은 `author`·`recipient`·`following` 만 지원(태그·룰·키워드 없음)
+- [ ] 배포 준비 — DB 이전(PostgreSQL 등), `ddl-auto=validate`, 마이그레이션(Flyway), 백업, HTTPS
 
 
 ## 관련 문서

@@ -3,7 +3,7 @@
 `godsse` 는 **React (Vite)** 프론트엔드와 **Java Spring Boot** 백엔드로 구성된 풀스택 프로젝트입니다.
 이 폴더에는 프로젝트 구조와 동작 흐름을 파악하기 위한 문서를 모아 둡니다.
 
-- 문서 최종 갱신: 2026-09-24
+- 문서 최종 갱신: 2026-11-02
 - 프론트엔드: React 19.3.0 + Vite 8.3.0 (JavaScript, ESLint 10 + Prettier 3.9)
 - 백엔드: Java **17** + Spring Boot **4.1.1** (Maven Wrapper 포함)
 
@@ -32,10 +32,10 @@ AI 도구는 아래 파일을 통해 작업 시작 시 자동으로 참고합니
 ## 30초 요약
 
 1. **프론트엔드(5173)** 에서 `/api/**` 를 호출하면 Vite 개발 서버가 **백엔드(8080)** 로 프록시한다.
-2. 백엔드의 샘플 API 는 `HelloController` 하나이고, 응답은 `record` DTO 로 내려간다.
-3. 프론트엔드는 `src/api/client.js`(공통 fetch 래퍼) → `src/api/greeting.js`(API 함수) → `App.jsx`(화면) 순서로 사용한다.
-4. 요청 검증 실패는 `ApiExceptionHandler` 가 400 + `{ message, errors[] }` 형태로 통일해서 돌려준다.
-5. 백엔드에는 Maven Wrapper(`mvnw.cmd`)가 포함되어 있어 **Maven 설치 없이** 실행할 수 있다 (JDK 17 만 필요).
+2. 백엔드는 Spring Boot 4 + JPA(H2 파일 DB)이고, 로그인은 **HttpSession(JSESSIONID)** + `@LoginUser` 리졸버로 처리한다.
+3. 기능 — 회원·프로필(아바타) · 감상(공개 범위·스포일러·태그·좋아요·답장) · 팔로우 · 알림(SSE) · 세션 달력(함께한 사람·감상 요청·연간 통계) · 룰 자동완성.
+4. 요청 검증 실패와 업무 오류는 `ApiExceptionHandler` 가 `{ message, errors[] }` 로 통일한다(400/401/403/404/409).
+5. 백엔드 테스트 **107건** 통과 + 프론트 `npm run lint`/`npm run build` 로 확인한다. 명령은 [06-development-guide.md](./06-development-guide.md).
 
 ## 실행 명령 요약
 

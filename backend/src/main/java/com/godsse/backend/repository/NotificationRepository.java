@@ -34,4 +34,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 	/** 언팔로우 시 그 알림을 지운다. */
 	void deleteByTypeAndRecipientIdAndActorId(NotificationType type, Long recipientId, Long actorId);
 
+	/** 같은 사람이 보낸 같은 종류의 알림을 <b>아직 읽지 않았는지</b>. (감상 요청 중복 방지) */
+	boolean existsByRecipientIdAndActorIdAndTypeAndReadAtIsNull(Long recipientId, Long actorId,
+			NotificationType type);
+
 }

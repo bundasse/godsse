@@ -43,50 +43,28 @@
 
 ```
 godsse/
-├─ README.md                     # 프로젝트 소개/실행 방법
-├─ .editorconfig                 # 인덴트 규칙 (js 2칸, java/xml 탭)
-├─ .gitattributes                # 줄바꿈 규칙 (* text=auto eol=lf)
-├─ .gitignore                    # node_modules, target, dist, .env 등 제외
-├─ .vscode/
-│  ├─ settings.json              # Prettier 기본 포매터, java/xml 탭 설정
-│  └─ extensions.json            # 추천 확장(ESLint, Prettier, Java, Boot)
-├─ doc/                          # ★ 이 문서 폴더
-└─ backend/                      # ── Spring Boot ──
-│  ├─ pom.xml                    # 의존성/버전 (Java 17, Boot 4.1.1)
-│  ├─ mvnw, mvnw.cmd             # Maven Wrapper (Maven 설치 불필요)
-│  ├─ .mvn/wrapper/maven-wrapper.properties
-│  ├─ .gitignore, .gitattributes, HELP.md
-│  └─ src/
-│     ├─ main/java/com/godsse/backend/
-│     │  ├─ GodsseBackendApplication.java      # 진입점(@SpringBootApplication)
-│     │  ├─ api/HelloController.java           # 샘플 REST API
-│     │  ├─ api/ApiExceptionHandler.java       # 검증 실패 → 400 JSON 변환
-│     │  ├─ api/dto/*.java                     # 요청/응답 record DTO 5종
-│     │  └─ config/CorsConfig.java             # /api/** CORS 설정
-│     ├─ main/resources/application.properties # 포트, CORS, actuator 설정
-│     └─ test/java/com/godsse/backend/
-│        ├─ GodsseBackendApplicationTests.java # 컨텍스트 로드 테스트
-│        └─ api/HelloControllerTest.java       # MockMvc API 테스트 4개
-└─ frontend/                     # ── React (Vite) ──
-   ├─ package.json               # 스크립트 + 의존성
-   ├─ vite.config.js             # 포트/프록시/별칭 설정
-   ├─ eslint.config.js           # ESLint flat config
-   ├─ .prettierrc.json           # semi 없음, single quote, 100자
-   ├─ .editorconfig, .env.example, .gitignore, jsconfig.json
-   ├─ index.html                 # #root + /src/main.jsx 로드
-   ├─ public/favicon.svg
+├─ README.md, AGENTS.md, .editorconfig, .gitattributes, .gitignore
+├─ .clinerules/                   # AI 작업 규칙(대원칙 4가지)
+├─ doc/                           # ★ 설계·API·학습 문서 (00~07, study/)
+├─ backend/                       # ── Spring Boot (Java 17, Boot 4.1.1) ──
+│  ├─ pom.xml, mvnw, mvnw.cmd
+│  └─ src/main/java/com/godsse/backend/
+│     ├─ api/                     # REST 컨트롤러 8개 + dto/ (record) + ApiExceptionHandler
+│     ├─ service/                 # 비즈니스 로직·트랜잭션 경계 8개 (+ SSE 스트림/리스너)
+│     ├─ repository/              # Spring Data JPA 9개
+│     ├─ domain/                  # 엔티티 9개 + enums/
+│     ├─ common/                  # @LoginUser, 예외 5종, 배지·스포일러·핸들 규칙
+│     └─ config/                  # CORS · 비밀번호 · 업로드 · 룰 시더
+└─ frontend/                      # ── React 19 + Vite 8 ──
    └─ src/
-      ├─ main.jsx                # createRoot 로 App 마운트
-      ├─ App.jsx                 # 예제 화면(조회 + 전송 폼)
-      ├─ App.css, index.css      # 스타일
-      └─ api/
-         ├─ client.js            # 공통 fetch 래퍼 + 에러 처리
-         └─ greeting.js          # /api/hello 관련 API 함수
+      ├─ api/                     # client.js(공통 fetch 래퍼) + 도메인별 7개
+      ├─ pages/                   # 화면 15개 (홈·검색·감상·마이·알림 …)
+      ├─ components/              # 재사용 UI 20개
+      ├─ layouts/, context/, constants/
+      └─ App.jsx, main.jsx
 ```
 
-> **2026-09-24 추가**: 프론트엔드는 `src/layouts/`(공통 레이아웃)·`src/pages/`(화면)·`src/components/`·
-> `src/constants/` 로 확장되었고, 백엔드는 `domain/`(엔티티)·`repository/`(DB 접근) 가 추가되었습니다.
-> 최신 구조는 [04-frontend.md](./04-frontend.md) · [03-backend.md](./03-backend.md) 를 참고하세요.
+> 파일 하나하나의 역할은 [03-backend.md](./03-backend.md) · [04-frontend.md](./04-frontend.md) 에 정리되어 있습니다.
 
 
 ## 4. 포트와 주소
@@ -95,7 +73,7 @@ godsse/
 | ---------------------- | ------------------------------------- | ----------------------------------------- |
 | 프론트엔드 개발 서버   | http://localhost:5173                 | Vite (`vite.config.js` 의 `server.port`)  |
 | 백엔드 API             | http://localhost:8080                 | `application.properties` 의 `server.port` |
-| 백엔드 API 문서(샘플)  | http://localhost:8080/api/hello       | `HelloController`                         |
+| 백엔드 공개 API 확인    | http://localhost:8080/api/rules       | 룰 목록(로그인 불필요)                    |
 | 헬스체크               | http://localhost:8080/actuator/health | Actuator                                  |
 | 프론트 → 백엔드 프록시 | `/api/**` → `http://localhost:8080`   | Vite dev server proxy                     |
 
@@ -103,16 +81,15 @@ godsse/
 
 | 항목                       | 상태                                                    |
 | -------------------------- | ------------------------------------------------------- |
-| 프론트엔드 `npm install`   | ✅ 완료 (142 packages, 취약점 0)                        |
+| 프론트엔드 `npm install`   | ✅ 완료 (취약점 0)                                      |
 | 프론트엔드 `npm run lint`  | ✅ 통과 (오류 0)                                        |
-| 프론트엔드 `npm run build` | ✅ 성공 (`19 modules transformed`)                      |
+| 프론트엔드 `npm run build` | ✅ 성공 (73 modules)                                    |
 | 프론트엔드 개발 서버       | ✅ `http://localhost:5173` HTTP 200 응답 확인           |
-| 백엔드 컴파일/테스트       | ⚠️ **미검증** — 개발 PC 에 JDK 가 없어 `mvnw` 실행 불가 |
-| 프론트 `npm run build`(2026-09-24 재확인) | ✅ 성공 (40 modules, 라우팅 추가 후)                  |
-| 백엔드 도메인/리포지토리 골격             | ⚠️ **미검증** — 개발 PC 에 JDK 가 없어 컴파일 불가    |
+| 백엔드 컴파일/테스트       | ✅ `.\mvnw.cmd test` — **107건 통과** (2026-11-02)      |
+| 실서버 API E2E             | ✅ 인증·감상·알림(SSE)·세션(참가자·통계)·룰 (2026-11-02) |
+| 프론트엔드 테스트          | ⚠️ **없음** — 테스트 스크립트 미도입                    |
 
-
-> 백엔드는 JDK 17 설치 후 `.\mvnw.cmd test` 로 검증하세요. 절차는 [06-development-guide.md](./06-development-guide.md) 참고.
+> 명령과 절차는 [06-development-guide.md](./06-development-guide.md) 참고.
 
 ## 관련 문서
 

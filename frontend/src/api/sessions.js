@@ -33,6 +33,7 @@ export const removeSessionParticipant = (id, handle) =>
  * 함께한 사람들에게 감상을 부탁하는 알림을 보낸다(소유자만). 성공하면 200.
  *
  * 이미 나에게 감상을 쓴 사람은 서버가 빼고 보내므로, 응답의 `requestedCount` 가 실제로 보낸 수다.
+ * 아직 읽지 않은 요청이 있는 사람도 서버가 건너뛰므로, `alreadyRequestedCount` 로 "왜 0명인지"를 안내한다.
  */
 export const requestSessionReviews = (id) => apiClient.post(`/api/sessions/${id}/request-reviews`)
 

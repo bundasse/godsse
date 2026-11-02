@@ -33,7 +33,11 @@
 | [11-profile-stats-badges.md](./11-profile-stats-badges.md) | 집계(count)와 계산된 값(배지) | `ProfileBadges`, `ReviewLikeRepository` |
 | [12-child-table-and-fetching.md](./12-child-table-and-fetching.md) | 자식 테이블(1:N)·N+1·삭제 순서 | `SessionParticipant`, `SessionPlanService` |
 
-> 첫 노트는 JDK 17 설치 후 `.\mvnw.cmd test` 를 실행하는 시점에 만들어질 예정입니다. (아래 예정 주제 참고)
+> 노트는 **기능을 붙이는 시점**에 함께 만듭니다(현재 12편). 아래 백로그 중 상당수는 실제 기능 노트에
+> 흡수되었습니다 — 05(Spring MVC)는 [02-spring-layers](./02-spring-layers.md), 06(DTO·Jackson)은
+> [02-spring-layers](./02-spring-layers.md)·[04-file-upload](./04-file-upload.md), 07(검증·예외)은
+> [02-spring-layers](./02-spring-layers.md), 08(테스트)는 각 API 노트의 "테스트" 절, 10(계층)은
+> [02-spring-layers](./02-spring-layers.md) 를 보세요.
 
 ## 예정 주제 (백로그)
 

@@ -106,6 +106,26 @@ int markAllRead(@Param("recipientId") Long recipientId, @Param("now") Instant no
 - 받는 사람: 그 일정의 **참가자**
 - **이미 나에게 감상을 쓴 사람은 뺍니다** — 이미 쓴 사람에게 "써 주세요"는 알림이 아니라 잔소리입니다.
   응답의 `requestedCount` 는 "실제로 보낸 사람 수"라, 0 이면 화면이 "모두 남겼습니다"로 안내할 수 있습니다.
+- **아직 읽지 않은 요청이 있으면 다시 보내지 않습니다** — 요청 기록을 저장하지 않으므로, 그냥 두면
+  버튼을 다섯 번 누른 만큼 같은 알림이 다섯 줄 쌓입니다. 반대로 "한 번 보냈으면 영원히 금지"하면
+  나중에 독촉할 방법이 없습니다. 그래서 기준을 **안 읽음(pending)** 에 두었습니다.
+
+```java
+// NotificationService — 정책은 알림 쪽에, 호출은 감상 요청 쪽에
+@Transactional
+public boolean notifyUnlessPending(User recipient, User actor, NotificationType type, Review review) {
+	if (this.notificationRepository.existsByRecipientIdAndActorIdAndTypeAndReadAtIsNull(
+			recipient.getId(), actor.getId(), type)) {
+		return false;
+	}
+	notify(recipient, actor, type, review);
+	return true;
+}
+```
+
+> 왜 `notify` 안에 넣지 않았을까? 좋아요·답장은 **매번 새 사실**이라 중복 제거가 오히려 정보를 잃습니다
+> (같은 감상에 두 번 답장하면 알림도 두 번이 맞습니다). 중복이 문제인 것은 "같은 부탁을 반복"하는
+> 감상 요청뿐이라, 규칙을 그 호출에만 붙입니다.
 - 관련 감상이 없으므로 `reviewId` 는 `null` 입니다. 그래서 화면의 이동 규칙이 종류마다 달라집니다.
 
 ```js

@@ -8,6 +8,28 @@ import {
 } from '@/api/sessions.js'
 
 /**
+ * 감상 요청 결과를 한 줄로 안내한다.
+ *
+ * "아무도 못 받았다"를 한 문장으로 뭉뚱그리면 이유를 알 수 없어서, 서버가 나눠 준 세 숫자를 그대로 쓴다.
+ * (이미 감상을 씀 / 아직 읽지 않은 요청이 있음 / 이번에 보냄)
+ */
+function requestSummary({ requestedCount, alreadyReviewedCount, alreadyRequestedCount }) {
+  if (requestedCount > 0) {
+    const skipped =
+      alreadyRequestedCount > 0 ? ` (아직 읽지 않아 ${alreadyRequestedCount}명은 건너뜀)` : ''
+    return `${requestedCount}명에게 감상 요청 알림을 보냈습니다.${skipped}`
+  }
+
+  if (alreadyRequestedCount > 0) {
+    return '이미 요청을 보냈고 아직 읽지 않았습니다. 상대가 읽은 뒤 다시 보낼 수 있어요.'
+  }
+
+  return alreadyReviewedCount > 0
+    ? '모두 이미 감상을 남겨서 보낼 요청이 없습니다.'
+    : '요청을 보낼 수 있는 사람이 없습니다.'
+}
+
+/**
  * 세션 일정에 "함께한 사람"을 기록하는 영역.
  *
  * 핸들로 가입한 사용자를 찾아 연결하고, 그 사람의 프로필과 **감상 작성 링크**로 이어 준다.
@@ -21,7 +43,7 @@ function SessionParticipants({ plan, onChanged }) {
   const [handle, setHandle] = useState('')
   const [error, setError] = useState(null)
   const [pending, setPending] = useState(false)
-  // 감상 요청 결과 (null = 아직 보내지 않음, 0 = 보낼 사람이 없었음)
+  // 감상 요청 결과 (null = 아직 보내지 않음)
   const [requested, setRequested] = useState(null)
 
   const participants = plan.participants ?? []
@@ -72,7 +94,7 @@ function SessionParticipants({ plan, onChanged }) {
     setRequested(null)
     run(async () => {
       const result = await requestSessionReviews(plan.id)
-      setRequested(result.requestedCount)
+      setRequested(result)
     })
   }
 
@@ -126,10 +148,8 @@ function SessionParticipants({ plan, onChanged }) {
       )}
 
       {requested !== null && (
-        <p className="text--success">
-          {requested > 0
-            ? `${requested}명에게 감상 요청 알림을 보냈습니다.`
-            : '모두 이미 감상을 남겨서 보낼 요청이 없습니다.'}
+        <p className={requested.requestedCount > 0 ? 'text--success' : 'text--muted'}>
+          {requestSummary(requested)}
         </p>
       )}
 

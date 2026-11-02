@@ -11,6 +11,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.godsse.backend.api.dto.ReviewRequestResponse;
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
 import com.godsse.backend.api.dto.SessionStatsResponse;
@@ -168,12 +169,14 @@ public class SessionPlanService {
 	 *
 	 * <p>
 	 * 이미 나에게 감상을 쓴 사람에게는 다시 보내지 않는다(요청이 반복될수록 알림만 쌓이므로).
+	 * 같은 이유로 <b>아직 읽지 않은 요청</b>이 있는 사람도 건너뛴다(버튼을 여러 번 누른 경우).
+	 * 읽은 뒤에는 다시 보낼 수 있으므로 독촉은 여전히 가능하다.
 	 *
-	 * @return 실제로 알림을 보낸 사람 수
+	 * @return 보낸 수·이미 감상을 쓴 수·건너뛴 수
 	 * @throws BadRequestException 함께한 사람이 아무도 없을 때 (400)
 	 */
 	@Transactional
-	public int requestReviews(User loginUser, Long id) {
+	public ReviewRequestResponse requestReviews(User loginUser, Long id) {
 		SessionPlan plan = getOwnedPlan(loginUser, id);
 		List<SessionParticipant> participants = this.sessionParticipantRepository
 			.findByPlanIdWithUser(plan.getId());
@@ -184,19 +187,26 @@ public class SessionPlanService {
 
 		User owner = plan.getOwner();
 		int requested = 0;
+		int reviewed = 0;
+		int pending = 0;
 
 		for (SessionParticipant participant : participants) {
 			User target = participant.getUser();
 
 			if (this.reviewRepository.existsByAuthorIdAndRecipientId(target.getId(), owner.getId())) {
+				reviewed++;
 				continue;
 			}
 
-			this.notificationService.notify(target, owner, NotificationType.REVIEW_REQUEST, null);
-			requested++;
+			if (this.notificationService.notifyUnlessPending(target, owner, NotificationType.REVIEW_REQUEST, null)) {
+				requested++;
+			}
+			else {
+				pending++;
+			}
 		}
 
-		return requested;
+		return new ReviewRequestResponse(requested, reviewed, pending);
 	}
 
 	/**

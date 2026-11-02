@@ -75,6 +75,34 @@ public class NotificationService {
 		publishCountChanged(recipient.getId());
 	}
 
+	/**
+	 * 같은 사람이 보낸 같은 종류의 알림을 <b>아직 읽지 않았다면</b> 새로 만들지 않는다.
+	 *
+	 * <p>
+	 * "감상 요청"처럼 사용자가 버튼을 여러 번 누를 수 있는 알림에 쓴다. 요청을 저장하지 않으므로 그냥
+	 * {@link #notify} 만 부르면 누른 횟수만큼 알림이 쌓인다(읽지도 않았는데 같은 내용이 여러 줄).
+	 * 반대로 "한 번 보냈으면 영원히 금지"하면 나중에 독촉할 방법이 없으므로, 선을 <b>안 읽음</b>에 긋는다.
+	 *
+	 * @return 실제로 알림을 남겼으면 {@code true}, 이미 대기 중인 알림이 있어 건너뛰었으면 {@code false}
+	 */
+	@Transactional
+	public boolean notifyUnlessPending(User recipient, User actor, NotificationType type, Review review) {
+		if (recipient == null || actor == null || recipient.getId().equals(actor.getId())) {
+			return false;
+		}
+
+		boolean pending = this.notificationRepository.existsByRecipientIdAndActorIdAndTypeAndReadAtIsNull(
+				recipient.getId(), actor.getId(), type);
+
+		if (pending) {
+			return false;
+		}
+
+		notify(recipient, actor, type, review);
+
+		return true;
+	}
+
 	/** 내 알림 목록(최신순 30건)과 안 읽은 개수. */
 	public NotificationListResponse list(User loginUser) {
 		List<NotificationResponse> items = this.notificationRepository

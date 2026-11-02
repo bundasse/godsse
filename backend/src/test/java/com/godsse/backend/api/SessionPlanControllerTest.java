@@ -295,7 +295,9 @@ class SessionPlanControllerTest {
 
 		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(owner))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.requestedCount").value(1));
+			.andExpect(jsonPath("$.requestedCount").value(1))
+			.andExpect(jsonPath("$.alreadyReviewedCount").value(1))
+			.andExpect(jsonPath("$.alreadyRequestedCount").value(0));
 
 		this.mockMvc.perform(get("/api/notifications").session(late))
 			.andExpect(status().isOk())
@@ -307,6 +309,41 @@ class SessionPlanControllerTest {
 		this.mockMvc.perform(get("/api/notifications").session(partner))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.items.length()").value(0));
+	}
+
+	@Test
+	@DisplayName("같은 사람에게 다시 요청해도, 아직 읽지 않았으면 알림이 쌓이지 않는다")
+	void requestReviewsDoesNotStack() throws Exception {
+		MockHttpSession owner = signup("planner");
+		MockHttpSession partner = signup("partner");
+		long id = createPlan(owner, "정기 캠페인", "2026-10-20");
+		addParticipant(owner, id, "partner");
+
+		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(owner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.requestedCount").value(1));
+
+		// 두 번째 요청 — 상대가 아직 읽지 않았으므로 새 알림을 만들지 않는다.
+		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(owner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.requestedCount").value(0))
+			.andExpect(jsonPath("$.alreadyRequestedCount").value(1));
+
+		this.mockMvc.perform(get("/api/notifications").session(partner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(1));
+
+		// 읽고 나면 다시 요청할 수 있다(독촉).
+		this.mockMvc.perform(post("/api/notifications/read-all").session(partner))
+			.andExpect(status().isNoContent());
+
+		this.mockMvc.perform(post("/api/sessions/" + id + "/request-reviews").session(owner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.requestedCount").value(1));
+
+		this.mockMvc.perform(get("/api/notifications").session(partner))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.items.length()").value(2));
 	}
 
 	@Test
