@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { fetchSessionStats } from '@/api/sessions.js'
+import RuleHeatmap from '@/components/RuleHeatmap.jsx'
 
 /**
  * 마이페이지의 연간 세션 통계 카드.
@@ -91,14 +92,8 @@ function SessionStats() {
             ))}
           </ul>
 
-          <ul className="stats__rules">
-            {data.rules.map((rule) => (
-              <li key={rule.ruleName}>
-                <span>{rule.ruleName}</span>
-                <strong>{rule.count}회</strong>
-              </li>
-            ))}
-          </ul>
+          {/* 룰별 횟수는 히트맵 범례가 함께 보여 준다(색까지 바꿀 수 있다). */}
+          <RuleHeatmap year={year} />
         </>
       )}
     </div>

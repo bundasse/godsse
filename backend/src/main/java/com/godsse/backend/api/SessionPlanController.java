@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.godsse.backend.api.dto.ReviewRequestResponse;
+import com.godsse.backend.api.dto.RuleHeatmapResponse;
 import com.godsse.backend.api.dto.SessionParticipantRequest;
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
@@ -115,6 +116,18 @@ public class SessionPlanController {
 	public SessionStatsResponse stats(@LoginUser User user,
 			@RequestParam(name = "year", required = false) Integer year) {
 		return this.sessionPlanService.stats(user, year);
+	}
+
+	/**
+	 * 한 해의 룰 히트맵(마이페이지 그래프). 예: {@code GET /api/sessions/heatmap?year=2026}
+	 *
+	 * <p>
+	 * {@code year} 를 생략하면 올해를 센다. 응답에는 일정이 있는 날만 담긴다.
+	 */
+	@GetMapping("/heatmap")
+	public RuleHeatmapResponse heatmap(@LoginUser User user,
+			@RequestParam(name = "year", required = false) Integer year) {
+		return this.sessionPlanService.heatmap(user, year);
 	}
 
 }

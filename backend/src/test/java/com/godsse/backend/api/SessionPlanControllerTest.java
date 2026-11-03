@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -419,6 +420,82 @@ class SessionPlanControllerTest {
 		this.mockMvc.perform(get("/api/sessions/stats")).andExpect(status().isUnauthorized());
 	}
 
+	@Test
+	@DisplayName("히트맵은 날짜별 룰과 룰별 횟수·색을 돌려준다")
+	void heatmap() throws Exception {
+		MockHttpSession session = signup("planner");
+
+		createPlanWithRule(session, "11월 1일 CoC", "2026-11-01", "크툴루의 부름 7판");
+		createPlanWithRule(session, "11월 1일 던월", "2026-11-01", "던전월드");
+		createPlanWithRule(session, "11월 1일 던월 2회차", "2026-11-01", "던전월드");
+		createPlanWithRule(session, "11월 3일 던월", "2026-11-03", "던전월드");
+
+		this.mockMvc.perform(get("/api/sessions/heatmap").session(session).param("year", "2026"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.year").value(2026))
+			.andExpect(jsonPath("$.totalCount").value(4))
+			.andExpect(jsonPath("$.days.length()").value(2))
+			.andExpect(jsonPath("$.days[0].date").value("2026-11-01"))
+			.andExpect(jsonPath("$.days[0].count").value(3))
+			// 같은 날 같은 룰을 두 번 해도 칸 색은 하나면 충분하다(중복 제거).
+			.andExpect(jsonPath("$.days[0].ruleNames.length()").value(2))
+			.andExpect(jsonPath("$.days[1].date").value("2026-11-03"))
+			.andExpect(jsonPath("$.rules[0].ruleName").value("던전월드"))
+			.andExpect(jsonPath("$.rules[0].count").value(3))
+			.andExpect(jsonPath("$.rules[0].color").isNotEmpty())
+			.andExpect(jsonPath("$.rules[0].custom").value(false))
+			.andExpect(jsonPath("$.rules[1].ruleName").value("크툴루의 부름 7판"))
+			.andExpect(jsonPath("$.rules[1].count").value(1));
+	}
+
+	@Test
+	@DisplayName("히트맵은 내가 고른 룰 색을 쓴다")
+	void heatmapUsesCustomColor() throws Exception {
+		MockHttpSession session = signup("planner");
+		createPlanWithRule(session, "일정", "2026-10-20", "던전월드");
+
+		this.mockMvc
+			.perform(put("/api/users/me/rule-colors").session(session).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ruleName\":\"던전월드\",\"color\":\"#FF8800\"}"))
+			.andExpect(status().isOk());
+
+		this.mockMvc.perform(get("/api/sessions/heatmap").session(session).param("year", "2026"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.rules[0].ruleName").value("던전월드"))
+			.andExpect(jsonPath("$.rules[0].color").value("#ff8800"))
+			.andExpect(jsonPath("$.rules[0].custom").value(true));
+	}
+
+	@Test
+	@DisplayName("히트맵에는 내 일정만 들어간다")
+	void heatmapIsMineOnly() throws Exception {
+		MockHttpSession mine = signup("planner");
+		MockHttpSession other = signup("otherplanner");
+		createPlan(mine, "내 일정", "2026-10-20");
+
+		this.mockMvc.perform(get("/api/sessions/heatmap").session(other).param("year", "2026"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.totalCount").value(0))
+			.andExpect(jsonPath("$.days.length()").value(0))
+			.andExpect(jsonPath("$.rules.length()").value(0));
+	}
+
+	@Test
+	@DisplayName("히트맵 연도가 범위를 벗어나면 400 이다")
+	void heatmapRejectsOutOfRangeYear() throws Exception {
+		MockHttpSession session = signup("planner");
+
+		this.mockMvc.perform(get("/api/sessions/heatmap").session(session).param("year", "1999"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("year"));
+	}
+
+	@Test
+	@DisplayName("히트맵 API 도 로그인이 필요하다")
+	void heatmapRequiresLogin() throws Exception {
+		this.mockMvc.perform(get("/api/sessions/heatmap")).andExpect(status().isUnauthorized());
+	}
+
 	/** 참가자(작성자)가 주최자에게 감상을 쓴다 — 요청 알림에서 빠지는지 확인하는 데 쓴다. */
 	private void writeReview(MockHttpSession session, String toHandle) throws Exception {
 		this.mockMvc
@@ -443,9 +520,13 @@ class SessionPlanControllerTest {
 	}
 
 	private long createPlan(MockHttpSession session, String title, String date) throws Exception {
+		return createPlanWithRule(session, title, date, "던전월드");
+	}
+
+	private long createPlanWithRule(MockHttpSession session, String title, String date, String rule) throws Exception {
 		MvcResult result = this.mockMvc
 			.perform(post("/api/sessions").session(session).contentType(MediaType.APPLICATION_JSON)
-				.content(planJson(title, date, "던전월드", null, "false", null)))
+				.content(planJson(title, date, rule, null, "false", null)))
 			.andExpect(status().isCreated())
 			.andReturn();
 

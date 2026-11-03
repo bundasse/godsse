@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,19 +13,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.godsse.backend.api.dto.ReviewRequestResponse;
+import com.godsse.backend.api.dto.RuleHeatmapResponse;
 import com.godsse.backend.api.dto.SessionPlanRequest;
 import com.godsse.backend.api.dto.SessionPlanResponse;
 import com.godsse.backend.api.dto.SessionStatsResponse;
 import com.godsse.backend.api.dto.UserSummary;
+import com.godsse.backend.common.RuleColors;
 import com.godsse.backend.common.exception.BadRequestException;
 import com.godsse.backend.common.exception.ConflictException;
 import com.godsse.backend.common.exception.ForbiddenException;
 import com.godsse.backend.common.exception.NotFoundException;
+import com.godsse.backend.domain.RuleColor;
 import com.godsse.backend.domain.SessionParticipant;
 import com.godsse.backend.domain.SessionPlan;
 import com.godsse.backend.domain.User;
 import com.godsse.backend.domain.enums.NotificationType;
 import com.godsse.backend.repository.ReviewRepository;
+import com.godsse.backend.repository.RuleColorRepository;
 import com.godsse.backend.repository.SessionParticipantRepository;
 import com.godsse.backend.repository.SessionPlanRepository;
 import com.godsse.backend.repository.UserRepository;
@@ -55,15 +60,18 @@ public class SessionPlanService {
 	private final SessionParticipantRepository sessionParticipantRepository;
 	private final UserRepository userRepository;
 	private final ReviewRepository reviewRepository;
+	private final RuleColorRepository ruleColorRepository;
 	private final NotificationService notificationService;
 
 	public SessionPlanService(SessionPlanRepository sessionPlanRepository,
 			SessionParticipantRepository sessionParticipantRepository, UserRepository userRepository,
-			ReviewRepository reviewRepository, NotificationService notificationService) {
+			ReviewRepository reviewRepository, RuleColorRepository ruleColorRepository,
+			NotificationService notificationService) {
 		this.sessionPlanRepository = sessionPlanRepository;
 		this.sessionParticipantRepository = sessionParticipantRepository;
 		this.userRepository = userRepository;
 		this.reviewRepository = reviewRepository;
+		this.ruleColorRepository = ruleColorRepository;
 		this.notificationService = notificationService;
 	}
 
@@ -219,10 +227,7 @@ public class SessionPlanService {
 	 * @throws BadRequestException 연도가 범위를 벗어났을 때 (400)
 	 */
 	public SessionStatsResponse stats(User loginUser, Integer year) {
-		int targetYear = year == null ? LocalDate.now().getYear() : year;
-		if (targetYear < MIN_STAT_YEAR || targetYear > MAX_STAT_YEAR) {
-			throw new BadRequestException("year", MIN_STAT_YEAR + "년 ~ " + MAX_STAT_YEAR + "년만 조회할 수 있습니다.");
-		}
+		int targetYear = resolveYear(year);
 
 		List<SessionPlan> plans = this.sessionPlanRepository.findByOwnerIdAndPlannedDateBetweenOrderByPlannedDateAscIdAsc(
 				loginUser.getId(), LocalDate.of(targetYear, 1, 1), LocalDate.of(targetYear, 12, 31));
@@ -259,6 +264,69 @@ public class SessionPlanService {
 		List<Integer> monthlyCounts = Arrays.stream(monthly).boxed().toList();
 
 		return new SessionStatsResponse(targetYear, plans.size(), planned, done, canceled, gm, monthlyCounts, rules);
+	}
+
+	/**
+	 * 한 해의 룰 히트맵 — 날짜별로 어떤 룰을 했는지 색과 함께 돌려준다.
+	 *
+	 * <p>
+	 * 한 해 일정은 수십 건이라 <b>한 번에 읽어 메모리에서 묶는다</b>(월별로 12번 조회하는 것보다 단순하다).
+	 * 응답에는 일정이 있는 날만 담고, 빈 날은 화면이 달력 모양으로 채운다.
+	 *
+	 * <p>
+	 * 칸 색은 ① 사용자가 고른 색이 있으면 그 색, ② 없으면 룰 이름에서 계산한 기본 팔레트 색이다.
+	 * 어떤 룰이 그 해에 여러 번 나오면 세션 수를, 같은 날 같은 룰을 두 번 했으면 칸 색은 한 번만 센다.
+	 *
+	 * @throws BadRequestException 연도가 범위를 벗어났을 때 (400)
+	 */
+	public RuleHeatmapResponse heatmap(User loginUser, Integer year) {
+		int targetYear = resolveYear(year);
+
+		List<SessionPlan> plans = this.sessionPlanRepository.findByOwnerIdAndPlannedDateBetweenOrderByPlannedDateAscIdAsc(
+				loginUser.getId(), LocalDate.of(targetYear, 1, 1), LocalDate.of(targetYear, 12, 31));
+
+		// 사용자가 직접 고른 색 — 저장된 것만 있고, 나머지는 기본 팔레트 색을 계산해 쓴다.
+		Map<String, String> customColors = new HashMap<>();
+		for (RuleColor ruleColor : this.ruleColorRepository.findByUserId(loginUser.getId())) {
+			customColors.put(ruleColor.getRuleName(), ruleColor.getColor());
+		}
+
+		// 일정은 날짜 → id 순으로 읽었으므로 넣은 순서가 곧 날짜 오름차순이 된다(LinkedHashMap).
+		Map<LocalDate, List<String>> ruleNamesByDate = new LinkedHashMap<>();
+		Map<LocalDate, Integer> countByDate = new HashMap<>();
+		Map<String, Integer> countByRule = new HashMap<>();
+
+		for (SessionPlan plan : plans) {
+			LocalDate date = plan.getPlannedDate();
+			List<String> ruleNames = ruleNamesByDate.computeIfAbsent(date, key -> new ArrayList<>());
+
+			// 같은 날 같은 룰을 두 번 했으면 칸 색은 하나로 충분하다(횟수는 count 에 남는다).
+			if (!ruleNames.contains(plan.getRuleName())) {
+				ruleNames.add(plan.getRuleName());
+			}
+
+			countByDate.merge(date, 1, Integer::sum);
+			countByRule.merge(plan.getRuleName(), 1, Integer::sum);
+		}
+
+		List<RuleHeatmapResponse.Day> days = ruleNamesByDate.entrySet()
+			.stream()
+			.map(entry -> new RuleHeatmapResponse.Day(entry.getKey(), countByDate.get(entry.getKey()),
+					List.copyOf(entry.getValue())))
+			.toList();
+
+		// 범례는 통계와 같은 순서(많은 순 → 이름 순)로 맞춘다.
+		List<RuleHeatmapResponse.Rule> rules = countByRule.entrySet()
+			.stream()
+			.sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+			.map(entry -> {
+				String custom = customColors.get(entry.getKey());
+				String color = custom != null ? custom : RuleColors.defaultColor(entry.getKey());
+				return new RuleHeatmapResponse.Rule(entry.getKey(), color, entry.getValue(), custom != null);
+			})
+			.toList();
+
+		return new RuleHeatmapResponse(targetYear, plans.size(), days, rules);
 	}
 
 	/**
@@ -310,6 +378,15 @@ public class SessionPlanService {
 		}
 
 		return plan;
+	}
+
+	/** 연도 파라미터를 검증한다(생략하면 올해). 통계와 히트맵이 같은 규칙을 쓴다. */
+	private static int resolveYear(Integer year) {
+		int targetYear = year == null ? LocalDate.now().getYear() : year;
+		if (targetYear < MIN_STAT_YEAR || targetYear > MAX_STAT_YEAR) {
+			throw new BadRequestException("year", MIN_STAT_YEAR + "년 ~ " + MAX_STAT_YEAR + "년만 조회할 수 있습니다.");
+		}
+		return targetYear;
 	}
 
 	private static String trimToNull(String value) {

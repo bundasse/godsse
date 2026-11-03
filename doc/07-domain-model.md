@@ -34,6 +34,8 @@
         users ──(follower_id)──► follows ──(following_id)──► users
 
         session_plans ──(1:N)──► session_participants ──(user_id)──► users
+
+        users ──(1:N)──► rule_colors   (룰 이름 + 내가 고른 색)
 ```
 
 | 엔티티 | 테이블 | 설명 |
@@ -48,6 +50,7 @@
 | `ReviewLike` | `review_likes` | 감상 **좋아요** (리뷰 + 사용자 유니크) |
 | `ReviewReply` | `review_replies` | 감상에 달린 **답장** (한 단계) |
 | `Notification` | `notifications` | 알림 (받는 사람 + 행동한 사람 + 종류) |
+| `RuleColor` | `rule_colors` | 히트맵 **룰 색** (사용자 + 룰 이름 유니크) |
 
 ## 3. 테이블 상세
 
@@ -197,6 +200,26 @@
 
 > 일정(`session_plans`)은 **나만 보는** 계획표지만, 참가자 기록은 "그 사람에게 감상을 쓰러 가는" 입구입니다.
 > 일정을 삭제할 때 참가자 행을 **먼저** 지웁니다(FK 제약), 그래서 서비스의 삭제 순서가 자식 → 부모입니다.
+
+### 3.11 `rule_colors` — 히트맵 룰 색
+
+| 컬럼 | 타입 | 제약 | 설명 |
+| --- | --- | --- | --- |
+| `id` | BIGINT | PK | |
+| `user_id` | BIGINT | NOT NULL, FK→users | 색을 고른 사람 |
+| `rule_name` | VARCHAR(50) | NOT NULL | 룰 이름(일정에 저장된 문자열 그대로) |
+| `color` | VARCHAR(7) | NOT NULL | `#rrggbb` (소문자) |
+| `created_at`, `updated_at` | TIMESTAMP | NOT NULL | |
+
+제약: `uk_rule_colors_user_rule (user_id, rule_name)` — 한 사람이 같은 룰에 색을 두 줄 가질 수 없다.
+저장은 "있으면 바꾸고, 없으면 만든다"(업서트) 방식이다.
+
+> **기본 팔레트 색은 저장하지 않습니다.** 사용자가 고른 색만 남기고, 나머지는
+> `common/RuleColors.defaultColor(ruleName)` 이 이름 해시로 계산합니다. 덕분에 룰이 늘어도 행이 쌓이지 않고,
+> 기본색 규칙을 바꿔도 저장된 데이터가 낡지 않습니다. 이름이 같은 룰은 서버를 다시 켜도 같은 색입니다.
+>
+> 룰 이름은 `rule_systems` FK 가 아니라 **문자열**입니다(감상·일정이 룰을 문자열로 저장하는 방식과 같음).
+> 그래서 룰 목록에 없는 자유 입력 룰에도 색을 지정할 수 있습니다.
 
 ## 4. 스포일러 규칙
 

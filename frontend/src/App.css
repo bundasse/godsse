@@ -400,20 +400,157 @@
   font-size: 11px;
 }
 
-.stats__rules {
+/* 룰 히트맵(마이페이지) ------------------------------------------------------ */
+
+.heatmap {
+  --heatmap-cell: 12px;
+  --heatmap-gap: 3px;
+
+  margin-top: 16px;
+}
+
+.heatmap__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.heatmap__scroll {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+/* 월 라벨 · 요일 라벨 · 칸을 한 격자에 놓아 라벨과 칸이 어긋나지 않게 한다 */
+.heatmap__chart {
+  display: grid;
+  grid-template-areas:
+    '. months'
+    'weekdays grid';
+  grid-template-columns: 14px auto;
+  gap: 2px 6px;
+  width: max-content;
+}
+
+.heatmap__months {
+  display: grid;
+  grid-area: months;
+  gap: var(--heatmap-gap);
+  color: var(--color-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.heatmap__weekdays {
+  display: grid;
+  grid-area: weekdays;
+  grid-template-rows: repeat(7, var(--heatmap-cell));
+  gap: var(--heatmap-gap);
+  color: var(--color-muted);
+  font-size: 9px;
+  line-height: var(--heatmap-cell);
+  text-align: right;
+}
+
+.heatmap__grid {
+  display: flex;
+  grid-area: grid;
+  gap: var(--heatmap-gap);
+}
+
+.heatmap__week {
+  display: grid;
+  grid-template-rows: repeat(7, var(--heatmap-cell));
+  gap: var(--heatmap-gap);
+}
+
+.heatmap__cell {
+  width: var(--heatmap-cell);
+  height: var(--heatmap-cell);
+  border-radius: 2px;
+  background-color: var(--color-border);
+}
+
+.heatmap__cell--empty {
+  background-color: transparent;
+}
+
+/* 오늘 칸은 테두리로 표시한다(배경색은 룰 색이 쓰고 있다) */
+.heatmap__cell--today {
+  outline: 1px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+.heatmap__hint {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.heatmap__legend {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin: 8px 0 0;
+  gap: 6px;
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
   font-size: 14px;
 }
 
-.stats__rules li {
+.heatmap__legend-item {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
   gap: 8px;
+}
+
+.heatmap__swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.heatmap__rule-name {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 색상 피커는 기본 모양이 커서 칩처럼 보이도록 줄인다 */
+.heatmap__color {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.heatmap__color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.heatmap__color::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+.heatmap__color:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.heatmap__reset {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .heatmap {
+    --heatmap-cell: 10px;
+  }
 }
 
 /* 룰 약어 자동완성 ------------------------------------------------------------ */

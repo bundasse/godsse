@@ -49,17 +49,17 @@ godsse/
 ├─ backend/                       # ── Spring Boot (Java 17, Boot 4.1.1) ──
 │  ├─ pom.xml, mvnw, mvnw.cmd
 │  └─ src/main/java/com/godsse/backend/
-│     ├─ api/                     # REST 컨트롤러 8개 + dto/ (record) + ApiExceptionHandler
-│     ├─ service/                 # 비즈니스 로직·트랜잭션 경계 8개 (+ SSE 스트림/리스너)
-│     ├─ repository/              # Spring Data JPA 9개
-│     ├─ domain/                  # 엔티티 9개 + enums/
-│     ├─ common/                  # @LoginUser, 예외 5종, 배지·스포일러·핸들 규칙
+│     ├─ api/                     # REST 컨트롤러 9개 + dto/ (record) + ApiExceptionHandler
+│     ├─ service/                 # 비즈니스 로직·트랜잭션 경계 9개 (+ SSE 스트림/리스너)
+│     ├─ repository/              # Spring Data JPA 10개
+│     ├─ domain/                  # 엔티티 10개 + enums/
+│     ├─ common/                  # @LoginUser, 예외 5종, 배지·스포일러·핸들·룰 색 규칙
 │     └─ config/                  # CORS · 비밀번호 · 업로드 · 룰 시더
 └─ frontend/                      # ── React 19 + Vite 8 ──
    └─ src/
-      ├─ api/                     # client.js(공통 fetch 래퍼) + 도메인별 7개
+      ├─ api/                     # client.js(공통 fetch 래퍼) + 도메인별 8개
       ├─ pages/                   # 화면 15개 (홈·검색·감상·마이·알림 …)
-      ├─ components/              # 재사용 UI 20개
+      ├─ components/              # 재사용 UI 21개
       ├─ layouts/, context/, constants/
       └─ App.jsx, main.jsx
 ```
@@ -83,10 +83,10 @@ godsse/
 | -------------------------- | ------------------------------------------------------- |
 | 프론트엔드 `npm install`   | ✅ 완료 (취약점 0)                                      |
 | 프론트엔드 `npm run lint`  | ✅ 통과 (오류 0)                                        |
-| 프론트엔드 `npm run build` | ✅ 성공 (73 modules)                                    |
+| 프론트엔드 `npm run build` | ✅ 성공 (75 modules)                                    |
 | 프론트엔드 개발 서버       | ✅ `http://localhost:5173` HTTP 200 응답 확인           |
-| 백엔드 컴파일/테스트       | ✅ `.\mvnw.cmd test` — **107건 통과** (2026-11-02)      |
-| 실서버 API E2E             | ✅ 인증·감상·알림(SSE)·세션(참가자·통계)·룰 (2026-11-02) |
+| 백엔드 컴파일/테스트       | ✅ `.\mvnw.cmd test` — **125건 통과** (2026-11-03)      |
+| 실서버 API E2E             | ✅ 인증·감상·알림(SSE)·세션(참가자·통계·히트맵·룰 색)·룰 (2026-11-03) |
 | 프론트엔드 테스트          | ⚠️ **없음** — 테스트 스크립트 미도입                    |
 
 > 명령과 절차는 [06-development-guide.md](./06-development-guide.md) 참고.

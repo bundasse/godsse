@@ -229,21 +229,25 @@ cd backend
 | 2026-11-02 | **감상 요청 중복 방지** — `NotificationService.notifyUnlessPending`(같은 사람의 **안 읽은** 요청이 있으면 새로 만들지 않음). 응답에 `alreadyReviewedCount`·`alreadyRequestedCount` 추가 |
 | 2026-11-02 | 화면은 세 숫자로 나눠 안내(보냄/이미 감상을 씀/아직 안 읽음). 읽은 뒤에는 다시 보낼 수 있어 독촉은 유지 |
 | 2026-11-02 | 검증: 백엔드 테스트 **107건 통과**, 감상 요청 E2E(1회차 1명 → 2회차 0명·`alreadyRequestedCount` 1 → 읽음 처리 → 3회차 1명) |
-| 2026-11-02 | 문서 정리: `01-overview`(구조·검증 상태), `doc/README`(30초 요약), `study/README`(색인) 최신화, §7 TODO 중 이미 끝난 항목 정리 |
+| 2026-11-03 | **룰 히트맵** — `GET /api/sessions/heatmap?year=`(날짜별 룰 + 룰별 색), 마이페이지 세션 기록 카드에 GitHub 잔디 모양(7행 × 주 단위) 달력 |
+| 2026-11-03 | **룰 색 개인화** — `rule_colors`(사용자 + 룰 이름 유니크), `GET`·`PUT`·`DELETE /api/users/me/rule-colors`(업서트·멱등 삭제), 기본색은 `common/RuleColors` 가 이름 해시로 계산(저장 안 함) |
+| 2026-11-03 | 프론트 — `RuleHeatmap`(여러 룰은 대각선 줄무늬, 오늘 칸 테두리, 색 피커 **500ms 디바운스** 저장·실패 시 되돌림), `SessionStats` 의 중복 룰 목록을 **색 편집 범례**로 대체 |
+| 2026-11-03 | 검증: 백엔드 테스트 **125건 통과**(룰 색 8 · 팔레트 5 · 히트맵 5 추가), 프론트 lint 0 / 빌드 75 modules, E2E(기본색 → 지정색 반영 → 초기화 → 401·400) |
 
 
 
 ## 7. 남은 작업 (TODO)
 
-- [x] 백엔드 컴파일/테스트 검증 — 2026-11-02 **107건 통과** (`.\mvnw.cmd test`)
+- [x] 백엔드 컴파일/테스트 검증 — 2026-11-03 **125건 통과** (`.\mvnw.cmd test`)
 - [x] `git init` + 커밋 — 완료 (`main` 브랜치)
 - [x] DB(JPA)·라우팅(react-router) 도입 — 2026-09-24 완료
-- [x] `service` 계층 도입 — `AuthService` … `SessionPlanService` 8개 (컨트롤러는 서비스만 호출)
+- [x] `service` 계층 도입 — `AuthService` … `RuleColorService` 9개 (컨트롤러는 서비스만 호출)
 - [x] 로그인 사용자 주입 — `@LoginUser` + `LoginUserArgumentResolver`
 - [x] 예외 응답 확장 — `common/exception` 5종 + `ApiExceptionHandler`(400/401/403/404/409)
 - [x] 세션 로그인 보안 — `http-only`·`same-site=lax`·`changeSessionId()`(세션 고정 방지)
 - [x] 세션 참가자·감상 요청·연간 통계, 룰 자동완성 — 2026-11-01 완료
 - [x] 감상 요청 중복 방지(안 읽은 요청은 다시 만들지 않음) — 2026-11-02 완료
+- [x] 룰 히트맵·색 개인화 — `GET /api/sessions/heatmap`, `rule_colors` + `/api/users/me/rule-colors` (2026-11-03 완료)
 - [ ] 프론트엔드 테스트 도입 — 현재 0건(`vitest` + Testing Library 후보)
 - [ ] 감상 검색·필터 — 지금은 `author`·`recipient`·`following` 만 지원(태그·룰·키워드 없음)
 - [ ] 배포 준비 — DB 이전(PostgreSQL 등), `ddl-auto=validate`, 마이그레이션(Flyway), 백업, HTTPS

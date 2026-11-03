@@ -46,14 +46,16 @@ com.godsse.backend
 │  ├─ FollowService.java           # 팔로우·언팔로우·팔로워/팔로잉 목록
 │  ├─ NotificationService.java     # 알림 만들기·조회·읽음 처리
 │  ├─ ReviewService.java           # 감상 작성·조회·수정·삭제 + 공개 범위 판단
-│  ├─ SessionPlanService.java      # 세션 일정(달력) + 기간 조회 + 감상 요청 + 연간 통계
+│  ├─ SessionPlanService.java      # 세션 일정(달력) + 기간 조회 + 감상 요청 + 통계·히트맵
 │  ├─ RuleService.java             # 룰 목록 조회(자동완성용)
+│  ├─ RuleColorService.java        # 히트맵 룰 색 조회·저장(업서트)·삭제
 │  └─ FileStorageService.java      # 업로드 파일 저장·검증·삭제 (UUID 이름)
 ├─ common/                         # 공통 상수·인증 보조
 │  ├─ SessionKeys.java             # 세션 키 상수
 │  ├─ LoginUser.java               # @LoginUser 애노테이션
 │  ├─ LoginUserArgumentResolver.java  # 세션 → 로그인 사용자 주입
 │  ├─ ReviewPreview.java           # 카드용 미리보기(스포일러 안전 절단)
+│  ├─ RuleColors.java              # 룰 기본 팔레트 10색 + 이름 → 색 계산 + #RRGGBB 검증
 │  ├─ SpoilerMarkers.java          # || · :::spoiler 마커 상수(프론트와 동일 값)
 │  └─ exception/                   # BusinessException, NotFound/Conflict/Unauthorized/BadRequest/Forbidden
 ├─ domain/                         # 엔티티 = DB 테이블
@@ -64,6 +66,7 @@ com.godsse.backend
 │  ├─ Review.java                  # reviews (감상 메시지)
 │  ├─ ReviewLike.java              # review_likes (좋아요)
 │  ├─ ReviewReply.java             # review_replies (답장)
+│  ├─ RuleColor.java               # rule_colors (히트맵 룰 색)
 │  ├─ RuleSystem.java              # rule_systems
 │  ├─ SessionPlan.java             # session_plans (달력)
 │  ├─ SessionParticipant.java      # session_participants (함께한 사람)
@@ -79,6 +82,7 @@ com.godsse.backend
 │  ├─ NotificationRepository.java
 │  ├─ ReviewLikeRepository.java
 │  ├─ ReviewReplyRepository.java
+│  ├─ RuleColorRepository.java
 │  ├─ RuleSystemRepository.java
 │  ├─ SessionPlanRepository.java
 │  └─ SessionParticipantRepository.java
@@ -152,6 +156,11 @@ com.godsse.backend
 | `api/RuleController` | 룰 목록. **로그인이 필요 없다**(참조 데이터) |
 | `domain/RuleSystem` | 룰(약어·이름·정렬 순서·사용 여부). 감상·일정은 이 테이블을 FK 로 잡지 않고 **이름만 문자열로** 저장 |
 | `config/RuleSystemSeeder` | 시작 시 기본 룰 8종 채우기. 약어가 이미 있으면 건너뛴다(멱등 — 고친 이름을 되돌리지 않음) |
+| `domain/RuleColor` | 히트맵 룰 색(사용자 + 룰 이름 유니크). **기본색은 저장하지 않는다** |
+| `common/RuleColors` | 기본 팔레트 10색 + `defaultColor(ruleName)`(같은 이름 → 같은 색) + `#RRGGBB` 검증 |
+| `service/RuleColorService` | 룰 색 조회·저장(업서트)·삭제(멱등). 색은 소문자로 정규화 |
+| `api/RuleColorController` | `/api/users/me/rule-colors` — 히트맵 룰 색(로그인 필요) |
+| `service/SessionPlanService`(확장 2) | **연간 룰 히트맵** — 날짜별 룰 + 룰별 색을 한 번에 계산(저장하지 않음) |
 
 ### 샘플 컨트롤러 동작 예 (HelloController)
 
@@ -262,9 +271,14 @@ public class HelloController {
 | `common/ReviewPreviewTest` | 미리보기 스포일러 안전 절단 검증 5건 |
 | `common/ProfileBadgesTest` | 배지 계산 규칙(기준 미달·첫 감상·전체) 검증 4건 |
 | `common/HandlesTest` | 핸들 정규화(공백·대소문자·null) 검증 2건 |
-| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 + **참가자 추가/삭제/권한/대소문자** 검증 13건 |
+| `api/SessionPlanControllerTest` | 세션 일정 작성·기간 조회·상태 변경·소유자 확인 + **참가자**·**감상 요청 중복 방지**·**통계**·**히트맵** 검증 26건 |
 | `api/ReviewReactionControllerTest` | 좋아요·답장·공개범위 검증 8건 |
 | `api/NotificationControllerTest` | 알림 발생·취소 시 삭제·읽음 처리·권한 + **SSE 연결/전송/커밋 전 미전송** 검증 11건 |
+| `api/RuleColorControllerTest` | 룰 색 저장(업서트·소문자·공백 다듬기)·삭제(멱등)·사용자 분리·검증·**401** 검증 8건 |
+| `common/RuleColorsTest` | 기본 팔레트 형식·결정성(같은 이름 → 같은 색)·`#RRGGBB` 검증 5건 |
+
+> 전체 **125건** (2026-11-03 기준). 히트맵은 "날짜별 룰 묶음 + 룰별 색"을, 룰 색은
+> "사람별 저장 + 기본값 계산"을 각각 확인합니다.
 
 프로젝트 루트(`godsse`)에서 실행합니다.
 
